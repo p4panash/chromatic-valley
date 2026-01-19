@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Chromatic Valley",
+    "slug": "chromatic-valley",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "chromatic-valley",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#fef5e7"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chromaticvalley.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#fef5e7"
+      },
+      "package": "com.chromaticvalley.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
