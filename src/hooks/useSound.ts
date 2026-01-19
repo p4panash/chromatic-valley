@@ -21,7 +21,7 @@ const SOUND_FILES: Record<SoundType, AVPlaybackSource> = {
 };
 
 // Background music
-const BGM_FILE: AVPlaybackSource = require('../../assets/sounds/bgm.mp3');
+const BGM_FILE: AVPlaybackSource = require('../../assets/sounds/bgm.m4a');
 
 // Volume settings
 const VOLUMES: Record<SoundType, number> = {
