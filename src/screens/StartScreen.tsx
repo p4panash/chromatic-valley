@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,11 +14,15 @@ interface StartScreenProps {
 export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen }) => {
   const insets = useSafeAreaInsets();
   const { isMuted, toggleMute, startBgm } = useSoundContext();
+  const hasInteractedRef = useRef(false);
 
   const handleSoundToggle = useCallback(() => {
+    // First interaction: start BGM (user interaction required for mobile audio)
+    if (!hasInteractedRef.current) {
+      hasInteractedRef.current = true;
+      startBgm();
+    }
     toggleMute();
-    // Start BGM on tap (user interaction required for mobile audio)
-    startBgm();
   }, [toggleMute, startBgm]);
 
   return (
