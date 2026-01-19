@@ -2,10 +2,12 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { useSound, SoundType } from '../hooks';
 
 interface SoundContextType {
-  playSound: (type: SoundType) => Promise<void>;
+  playSound: (type: SoundType) => void;
   isMuted: boolean;
   toggleMute: () => void;
   isLoaded: boolean;
+  startBgm: () => void;
+  stopBgm: () => void;
 }
 
 const SoundContext = createContext<SoundContextType | null>(null);
@@ -25,10 +27,12 @@ export const useSoundContext = (): SoundContextType => {
   if (!context) {
     // Return a no-op implementation if context isn't available
     return {
-      playSound: async () => {},
+      playSound: () => {},
       isMuted: false,
       toggleMute: () => {},
       isLoaded: false,
+      startBgm: () => {},
+      stopBgm: () => {},
     };
   }
   return context;

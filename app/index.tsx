@@ -28,7 +28,7 @@ function GameApp() {
   } = useGame({ tutorialActive: activeTutorial !== null });
   const haptics = useHaptics();
   const storage = useStorage();
-  const { playSound } = useSound();
+  const { playSound, startBgm, stopBgm } = useSound();
 
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [previousHighScore, setPreviousHighScore] = useState(0);
@@ -162,7 +162,8 @@ function GameApp() {
     startGame('unified');
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics, playSound]);
+    startBgm();
+  }, [startGame, haptics, playSound, startBgm]);
 
   const handleStartZen = useCallback(() => {
     haptics.triggerMedium();
@@ -171,7 +172,8 @@ function GameApp() {
     startGame('zen');
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics, playSound]);
+    startBgm();
+  }, [startGame, haptics, playSound, startBgm]);
 
   const handleRestart = useCallback(() => {
     haptics.triggerMedium();
@@ -180,14 +182,16 @@ function GameApp() {
     startGame(gameState.mode);
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics, gameState.mode, playSound]);
+    startBgm();
+  }, [startGame, haptics, gameState.mode, playSound, startBgm]);
 
   const handleHome = useCallback(() => {
     haptics.triggerLight();
     playSound('tap');
+    stopBgm();
     setCurrentScreen('start');
     triggeredTutorialsRef.current.clear();
-  }, [haptics, playSound]);
+  }, [haptics, playSound, stopBgm]);
 
   // Check if game has ended and save high score
   useEffect(() => {
@@ -200,7 +204,8 @@ function GameApp() {
       setIsNewHighScore(isNewRecord);
       scoreSavedRef.current = false;
 
-      // Play game over sound
+      // Stop BGM and play game over sound
+      stopBgm();
       playSound('gameOver');
 
       const timer = setTimeout(async () => {
@@ -223,7 +228,7 @@ function GameApp() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [gameState.isPlaying, gameState.totalAnswers, gameState.score, gameState.mode, currentScreen, storage, playSound]);
+  }, [gameState.isPlaying, gameState.totalAnswers, gameState.score, gameState.mode, currentScreen, storage, playSound, stopBgm]);
 
   return (
     <>
