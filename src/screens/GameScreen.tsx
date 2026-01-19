@@ -9,6 +9,7 @@ import {
   ColorMatchChallenge,
   ColorWheelChallenge,
   MiniCastle,
+  BackButton,
 } from '../components';
 import { useHaptics } from '../hooks';
 import { COLORS, GAME_CONFIG } from '../constants/theme';
@@ -20,6 +21,7 @@ interface GameScreenProps {
   feedback: FeedbackType;
   castleProgress: CastleProgress;
   onChoice: (value: string | number) => void;
+  onExit?: () => void;
 }
 
 export const GameScreen: React.FC<GameScreenProps> = ({
@@ -28,6 +30,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   feedback,
   castleProgress,
   onChoice,
+  onExit,
 }) => {
   const insets = useSafeAreaInsets();
   const haptics = useHaptics();
@@ -80,8 +83,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           },
         ]}
       >
-        {/* Header row with stats and castle on the right */}
+        {/* Header row with back button, stats and castle */}
         <View style={styles.headerRow}>
+          {onExit && (
+            <BackButton onPress={onExit} size={36} />
+          )}
           <GameHeader
             level={gameState.level}
             streak={gameState.streak}
@@ -137,6 +143,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: 8,
   },
   castleSide: {
     alignItems: 'center',

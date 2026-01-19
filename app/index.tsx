@@ -206,6 +206,13 @@ function GameApp() {
     triggeredTutorialsRef.current.clear();
   }, [haptics, playSound]);
 
+  const handleExitGame = useCallback(() => {
+    haptics.triggerLight();
+    playSound('tap');
+    setCurrentScreen('start');
+    triggeredTutorialsRef.current.clear();
+  }, [haptics, playSound]);
+
   // Check if game has ended and save high score
   useEffect(() => {
     if (!gameState.isPlaying && gameState.totalAnswers > 0 && currentScreen === 'game') {
@@ -269,6 +276,7 @@ function GameApp() {
             feedback={feedback}
             castleProgress={castleProgress}
             onChoice={handleChoice}
+            onExit={handleExitGame}
           />
 
           {/* Contextual Tutorial Overlay */}

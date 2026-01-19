@@ -16,3 +16,4 @@ export { MiniCastle } from './MiniCastle';
 export { ContextualTutorial } from './ContextualTutorial';
 export { StreakCelebration } from './StreakCelebration';
 export { SoundIcon } from './SoundIcon';
+export { BackButton } from './BackButton';
