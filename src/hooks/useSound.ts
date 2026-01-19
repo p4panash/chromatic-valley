@@ -33,7 +33,7 @@ const VOLUMES: Record<SoundType, number> = {
   gameOver: 0.4,
 };
 
-const BGM_VOLUME = 0.15;
+const BGM_VOLUME = 0.35;
 
 interface UseSoundReturn {
   playSound: (type: SoundType) => void;
@@ -136,9 +136,20 @@ export const useSound = (): UseSoundReturn => {
   }, []);
 
   const startBgm = useCallback(() => {
-    if (!bgmRef.current) return;
-    bgmRef.current.setPositionAsync(0)
-      .then(() => bgmRef.current?.playAsync())
+    const bgm = bgmRef.current;
+    if (!bgm) {
+      // BGM not loaded yet, retry after a short delay
+      setTimeout(() => {
+        if (bgmRef.current) {
+          bgmRef.current.setPositionAsync(0)
+            .then(() => bgmRef.current?.playAsync())
+            .catch(() => {});
+        }
+      }, 1000);
+      return;
+    }
+    bgm.setPositionAsync(0)
+      .then(() => bgm.playAsync())
       .catch(() => {});
   }, []);
 

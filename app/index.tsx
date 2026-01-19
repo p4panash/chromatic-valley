@@ -38,15 +38,11 @@ function GameApp() {
   const triggeredTutorialsRef = useRef<Set<TutorialMechanic>>(new Set());
   const bgmStartedRef = useRef(false);
 
-  // Start background music on app load
-  useEffect(() => {
+  // Start BGM on first user interaction (required for mobile audio)
+  const ensureBgmPlaying = useCallback(() => {
     if (!bgmStartedRef.current) {
       bgmStartedRef.current = true;
-      // Small delay to ensure sounds are loaded
-      const timer = setTimeout(() => {
-        startBgm();
-      }, 500);
-      return () => clearTimeout(timer);
+      startBgm();
     }
   }, [startBgm]);
 
@@ -171,29 +167,32 @@ function GameApp() {
   const handleStart = useCallback(() => {
     haptics.triggerMedium();
     playSound('tap');
+    ensureBgmPlaying();
     scoreSavedRef.current = false;
     startGame('unified');
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics, playSound]);
+  }, [startGame, haptics, playSound, ensureBgmPlaying]);
 
   const handleStartZen = useCallback(() => {
     haptics.triggerMedium();
     playSound('tap');
+    ensureBgmPlaying();
     scoreSavedRef.current = false;
     startGame('zen');
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics, playSound]);
+  }, [startGame, haptics, playSound, ensureBgmPlaying]);
 
   const handleRestart = useCallback(() => {
     haptics.triggerMedium();
     playSound('tap');
+    ensureBgmPlaying();
     scoreSavedRef.current = false;
     startGame(gameState.mode);
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics, gameState.mode, playSound]);
+  }, [startGame, haptics, gameState.mode, playSound, ensureBgmPlaying]);
 
   const handleHome = useCallback(() => {
     haptics.triggerLight();
