@@ -28,7 +28,7 @@ function GameApp() {
   } = useGame({ tutorialActive: activeTutorial !== null });
   const haptics = useHaptics();
   const storage = useStorage();
-  const { playSound, startBgm, stopBgm } = useSound();
+  const { playSound, startBgm } = useSound();
 
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [previousHighScore, setPreviousHighScore] = useState(0);
@@ -36,6 +36,19 @@ function GameApp() {
   const scoreSavedRef = useRef(false);
   const lastStreakMilestoneRef = useRef<number | null>(null);
   const triggeredTutorialsRef = useRef<Set<TutorialMechanic>>(new Set());
+  const bgmStartedRef = useRef(false);
+
+  // Start background music on app load
+  useEffect(() => {
+    if (!bgmStartedRef.current) {
+      bgmStartedRef.current = true;
+      // Small delay to ensure sounds are loaded
+      const timer = setTimeout(() => {
+        startBgm();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [startBgm]);
 
   // Handle streak celebrations
   useEffect(() => {
@@ -162,8 +175,7 @@ function GameApp() {
     startGame('unified');
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-    startBgm();
-  }, [startGame, haptics, playSound, startBgm]);
+  }, [startGame, haptics, playSound]);
 
   const handleStartZen = useCallback(() => {
     haptics.triggerMedium();
@@ -172,8 +184,7 @@ function GameApp() {
     startGame('zen');
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-    startBgm();
-  }, [startGame, haptics, playSound, startBgm]);
+  }, [startGame, haptics, playSound]);
 
   const handleRestart = useCallback(() => {
     haptics.triggerMedium();
@@ -182,16 +193,14 @@ function GameApp() {
     startGame(gameState.mode);
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-    startBgm();
-  }, [startGame, haptics, gameState.mode, playSound, startBgm]);
+  }, [startGame, haptics, gameState.mode, playSound]);
 
   const handleHome = useCallback(() => {
     haptics.triggerLight();
     playSound('tap');
-    stopBgm();
     setCurrentScreen('start');
     triggeredTutorialsRef.current.clear();
-  }, [haptics, playSound, stopBgm]);
+  }, [haptics, playSound]);
 
   // Check if game has ended and save high score
   useEffect(() => {
@@ -204,8 +213,7 @@ function GameApp() {
       setIsNewHighScore(isNewRecord);
       scoreSavedRef.current = false;
 
-      // Stop BGM and play game over sound
-      stopBgm();
+      // Play game over sound
       playSound('gameOver');
 
       const timer = setTimeout(async () => {
@@ -228,7 +236,7 @@ function GameApp() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [gameState.isPlaying, gameState.totalAnswers, gameState.score, gameState.mode, currentScreen, storage, playSound, stopBgm]);
+  }, [gameState.isPlaying, gameState.totalAnswers, gameState.score, gameState.mode, currentScreen, storage, playSound]);
 
   return (
     <>
