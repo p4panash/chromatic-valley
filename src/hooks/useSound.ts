@@ -135,22 +135,31 @@ export const useSound = (): UseSoundReturn => {
       .catch(() => {});
   }, []);
 
-  const startBgm = useCallback(() => {
+  const startBgm = useCallback(async () => {
     const bgm = bgmRef.current;
     if (!bgm) {
       // BGM not loaded yet, retry after a short delay
       setTimeout(() => {
         if (bgmRef.current) {
-          bgmRef.current.setPositionAsync(0)
-            .then(() => bgmRef.current?.playAsync())
-            .catch(() => {});
+          bgmRef.current.getStatusAsync().then((status) => {
+            if (status.isLoaded && !status.isPlaying) {
+              bgmRef.current?.playAsync().catch(() => {});
+            }
+          }).catch(() => {});
         }
       }, 1000);
       return;
     }
-    bgm.setPositionAsync(0)
-      .then(() => bgm.playAsync())
-      .catch(() => {});
+
+    // Check if already playing to avoid duplicates
+    try {
+      const status = await bgm.getStatusAsync();
+      if (status.isLoaded && !status.isPlaying) {
+        await bgm.playAsync();
+      }
+    } catch {
+      // Silently fail
+    }
   }, []);
 
   const stopBgm = useCallback(() => {
