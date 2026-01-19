@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -33,7 +33,12 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   onExit,
 }) => {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const haptics = useHaptics();
+
+  const isCompact = width < 400;
+  const backButtonSize = isCompact ? 36 : 40;
+  const castleSize = isCompact ? 60 : 70;
 
   // Trigger haptics on feedback
   useEffect(() => {
@@ -83,25 +88,27 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           },
         ]}
       >
-        {/* Header row with back button, stats and castle */}
-        <View style={styles.headerRow}>
+        {/* Thin header bar */}
+        <View style={styles.headerBar}>
           {onExit && (
-            <BackButton onPress={onExit} size={36} />
+            <BackButton onPress={onExit} size={backButtonSize} />
           )}
           <GameHeader
             level={gameState.level}
             streak={gameState.streak}
+            score={gameState.score}
             lives={lives}
             isZenMode={isZenMode}
           />
-          <View style={styles.castleSide}>
-            <MiniCastle
-              progress={castleProgress}
-              score={gameState.score}
-              answerColors={gameState.answerColors}
-              size={70}
-            />
-          </View>
+        </View>
+
+        {/* Castle positioned absolutely, below header aligned with score */}
+        <View style={[styles.castleAbsolute, { top: insets.top + (isCompact ? 52 : 58) }]}>
+          <MiniCastle
+            progress={castleProgress}
+            answerColors={gameState.answerColors}
+            size={castleSize}
+          />
         </View>
 
         {/* Challenge area */}
@@ -139,15 +146,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  headerRow: {
+  headerBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 8,
   },
-  castleSide: {
-    alignItems: 'center',
-    marginLeft: 10,
+  castleAbsolute: {
+    position: 'absolute',
+    right: 20,
   },
   gameArea: {
     flex: 1,

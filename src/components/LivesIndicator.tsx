@@ -11,11 +11,13 @@ import { COLORS, GAME_CONFIG } from '../constants/theme';
 
 interface LivesIndicatorProps {
   lives: number;
+  size?: 'normal' | 'small';
 }
 
-const LifeOrb = memo(({ filled, index }: { filled: boolean; index: number }) => {
+const LifeOrb = memo(({ filled, index, small }: { filled: boolean; index: number; small?: boolean }) => {
   const scale = useSharedValue(filled ? 1 : 0.8);
   const opacity = useSharedValue(filled ? 1 : 0.3);
+  const orbSize = small ? 12 : 18;
 
   useEffect(() => {
     if (!filled) {
@@ -40,24 +42,26 @@ const LifeOrb = memo(({ filled, index }: { filled: boolean; index: number }) => 
     <Animated.View
       style={[
         styles.lifeOrb,
+        { width: orbSize, height: orbSize, borderRadius: orbSize / 2, borderWidth: small ? 1.5 : 2 },
         filled ? styles.lifeOrbFilled : styles.lifeOrbEmpty,
         animatedStyle,
       ]}
     >
-      <View style={[styles.lifeOrbInner, filled && styles.lifeOrbInnerFilled]} />
+      <View style={[styles.lifeOrbInner, { width: small ? 4 : 6, height: small ? 4 : 6, borderRadius: small ? 2 : 3 }, filled && styles.lifeOrbInnerFilled]} />
     </Animated.View>
   );
 });
 
 LifeOrb.displayName = 'LifeOrb';
 
-const LivesIndicatorComponent: React.FC<LivesIndicatorProps> = ({ lives }) => {
+const LivesIndicatorComponent: React.FC<LivesIndicatorProps> = ({ lives, size = 'normal' }) => {
   const maxLives = GAME_CONFIG.maxWrongAnswers;
+  const isSmall = size === 'small';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isSmall && styles.containerSmall]}>
       {Array.from({ length: maxLives }, (_, index) => (
-        <LifeOrb key={index} index={index} filled={index < lives} />
+        <LifeOrb key={index} index={index} filled={index < lives} small={isSmall} />
       ))}
     </View>
   );
@@ -70,6 +74,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  containerSmall: {
+    gap: 4,
   },
   lifeOrb: {
     width: 18,

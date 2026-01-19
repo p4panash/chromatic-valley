@@ -154,6 +154,7 @@ export const ComplementaryScreen: React.FC<ComplementaryScreenProps> = ({
         <GameHeader
           level={gameState.level}
           streak={gameState.streak}
+          score={gameState.score}
           lives={GAME_CONFIG.maxWrongAnswers - (gameState.totalAnswers - gameState.correctAnswers)}
           isZenMode={false}
         />

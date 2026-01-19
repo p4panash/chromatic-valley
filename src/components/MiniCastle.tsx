@@ -23,9 +23,10 @@ import type { CastleProgress, CastleStage } from '../types';
 
 interface MiniCastleProps {
   progress: CastleProgress;
-  score: number;
+  score?: number;
   answerColors: string[];
   size?: number;
+  showScore?: boolean;
 }
 
 const DEFAULT_SIZE = 80;
@@ -54,7 +55,7 @@ const CASTLE_COLORS = {
   shadowDark: COLORS.shadow.dark,
 };
 
-const MiniCastleComponent: React.FC<MiniCastleProps> = ({ progress, score, answerColors, size = DEFAULT_SIZE }) => {
+const MiniCastleComponent: React.FC<MiniCastleProps> = ({ progress, score = 0, answerColors, size = DEFAULT_SIZE, showScore = false }) => {
   const scale = useSharedValue(1);
   const scoreScale = useSharedValue(1);
 
@@ -438,23 +439,25 @@ const MiniCastleComponent: React.FC<MiniCastleProps> = ({ progress, score, answe
 
       </Animated.View>
 
-      {/* Score display with elegant card styling */}
-      <View style={styles.scoreContainer}>
-        <View style={styles.scoreCard}>
-          <Animated.Text style={[styles.score, scoreAnimatedStyle]}>
-            {score}
-          </Animated.Text>
-          {/* Progress bar inside card */}
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${Math.min(100, (currentStageIndex + 1) * 20)}%` }
-              ]}
-            />
+      {/* Score display with elegant card styling - only shown if showScore is true */}
+      {showScore && (
+        <View style={styles.scoreContainer}>
+          <View style={styles.scoreCard}>
+            <Animated.Text style={[styles.score, scoreAnimatedStyle]}>
+              {score}
+            </Animated.Text>
+            {/* Progress bar inside card */}
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${Math.min(100, (currentStageIndex + 1) * 20)}%` }
+                ]}
+              />
+            </View>
           </View>
         </View>
-      </View>
+      )}
     </View>
   );
 };

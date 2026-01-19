@@ -10,13 +10,15 @@ interface BackButtonProps {
 
 export const BackButton: React.FC<BackButtonProps> = memo(({
   onPress,
-  size = 36,
+  size = 40,
 }) => {
-  const iconSize = size * 0.5;
+  const isCompact = size < 40;
+  const iconSize = isCompact ? 14 : 16;
+  const borderRadius = isCompact ? 8 : 10;
 
   return (
     <TouchableOpacity
-      style={[styles.button, { width: size, height: size, borderRadius: size / 2 }]}
+      style={[styles.button, { width: size, height: size, borderRadius }]}
       onPress={onPress}
       activeOpacity={0.7}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
