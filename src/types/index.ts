@@ -19,6 +19,7 @@ export interface GameState {
   mode: GameMode;
   wrongAnswers: number;
   roundsSinceSwitch: number;
+  answerColors: string[]; // Colors from correct answers for castle windows
 }
 
 // Legacy RoundState for backwards compatibility

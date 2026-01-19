@@ -256,6 +256,7 @@ export default function App() {
             onHome={handleHome}
             isNewHighScore={isNewHighScore}
             previousHighScore={previousHighScore}
+            castleProgress={castleProgress}
           />
         </Animated.View>
       )}

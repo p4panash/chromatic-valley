@@ -11,9 +11,9 @@ import Animated, {
   withDelay,
   withSpring,
 } from 'react-native-reanimated';
-import { Button, BackgroundShapes } from '../components';
+import { Button, BackgroundShapes, MiniCastle } from '../components';
 import { COLORS, FONTS, RESULT_TITLES } from '../constants/theme';
-import type { GameState } from '../types';
+import type { GameState, CastleProgress } from '../types';
 
 interface ResultScreenProps {
   gameState: GameState;
@@ -21,6 +21,7 @@ interface ResultScreenProps {
   onHome?: () => void;
   isNewHighScore?: boolean;
   previousHighScore?: number;
+  castleProgress?: CastleProgress;
 }
 
 export const ResultScreen: React.FC<ResultScreenProps> = ({
@@ -29,36 +30,50 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
   onHome,
   isNewHighScore = false,
   previousHighScore = 0,
+  castleProgress,
 }) => {
   const insets = useSafeAreaInsets();
 
-  const towerY = useSharedValue(0);
+  const castleY = useSharedValue(0);
+  const castleScale = useSharedValue(0);
   const scoreScale = useSharedValue(0);
   const statsOpacity = useSharedValue(0);
 
   useEffect(() => {
-    // Tower floating animation
-    towerY.value = withRepeat(
-      withTiming(-10, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
+    // Castle entrance animation
+    castleScale.value = withDelay(
+      100,
+      withSpring(1, { damping: 10, stiffness: 80 })
+    );
+
+    // Castle floating animation
+    castleY.value = withDelay(
+      600,
+      withRepeat(
+        withTiming(-8, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true
+      )
     );
 
     // Score entrance animation
     scoreScale.value = withDelay(
-      200,
+      400,
       withSpring(1, { damping: 8, stiffness: 100 })
     );
 
     // Stats entrance animation
     statsOpacity.value = withDelay(
-      400,
+      600,
       withTiming(1, { duration: 500 })
     );
-  }, [towerY, scoreScale, statsOpacity]);
+  }, [castleY, castleScale, scoreScale, statsOpacity]);
 
-  const towerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: towerY.value }],
+  const castleStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: castleY.value },
+      { scale: castleScale.value },
+    ],
   }));
 
   const scoreStyle = useAnimatedStyle(() => ({
@@ -95,32 +110,26 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
           },
         ]}
       >
-        {/* Monument */}
-        <Animated.View style={[styles.monumentContainer, towerStyle]}>
-          <View style={styles.tower}>
-            <View style={styles.towerOrb} />
-            <View style={styles.towerBody}>
-              <View style={styles.towerWindow} />
-            </View>
-          </View>
-        </Animated.View>
-
         {/* Title */}
         <Text style={styles.title}>{getTitle()}</Text>
 
-        {/* Score */}
-        <Animated.View style={[styles.scoreContainer, scoreStyle]}>
+        {/* Player's Completed Castle with integrated score */}
+        <Animated.View style={[styles.castleContainer, castleStyle]}>
           {isNewHighScore && (
-            <View style={styles.newRecordBadge}>
+            <Animated.View style={[styles.newRecordBadge, scoreStyle]}>
               <Text style={styles.newRecordText}>New Record!</Text>
-            </View>
+            </Animated.View>
           )}
-          <Text style={styles.scoreLabel}>Final Score</Text>
-          <Text style={styles.scoreValue}>{gameState.score}</Text>
+          <MiniCastle
+            progress={castleProgress || { stage: 'crown', percentage: 100 }}
+            score={gameState.score}
+            answerColors={gameState.answerColors}
+            size={140}
+          />
           {previousHighScore > 0 && !isNewHighScore && (
-            <Text style={styles.previousHighScore}>
+            <Animated.Text style={[styles.previousHighScore, scoreStyle]}>
               Best: {previousHighScore}
-            </Text>
+            </Animated.Text>
           )}
         </Animated.View>
 
@@ -162,89 +171,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  monumentContainer: {
-    marginBottom: 30,
-  },
-  tower: {
-    alignItems: 'center',
-  },
-  towerOrb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.accent.coral,
-    marginBottom: -5,
-  },
-  towerBody: {
-    width: 60,
-    height: 100,
-    backgroundColor: COLORS.accent.lavender,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    borderBottomLeftRadius: 5,
-    borderBottomRightRadius: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  towerWindow: {
-    width: 25,
-    height: 35,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    marginTop: -10,
-  },
   title: {
     fontSize: 24,
     fontWeight: FONTS.light,
     letterSpacing: 3,
     textTransform: 'uppercase',
     color: COLORS.text.primary,
-    marginBottom: 30,
+    marginBottom: 32,
     textAlign: 'center',
   },
-  scoreContainer: {
-    alignItems: 'center',
+  castleContainer: {
     marginBottom: 40,
+    alignItems: 'center',
   },
   newRecordBadge: {
     backgroundColor: COLORS.accent.coral,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 15,
-    marginBottom: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: COLORS.accent.coral,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   newRecordText: {
     fontSize: 12,
     fontWeight: FONTS.semiBold,
     color: COLORS.white,
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   previousHighScore: {
     fontSize: 14,
     fontWeight: FONTS.medium,
     color: COLORS.text.secondary,
-    marginTop: 8,
-  },
-  scoreLabel: {
-    fontSize: 12,
-    fontWeight: FONTS.medium,
-    color: COLORS.text.secondary,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginBottom: 5,
-  },
-  scoreValue: {
-    fontSize: 64,
-    fontWeight: FONTS.light,
-    color: COLORS.accent.coral,
+    marginTop: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 40,
-    marginBottom: 50,
+    gap: 36,
+    marginBottom: 40,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 16,
   },
   stat: {
     alignItems: 'center',

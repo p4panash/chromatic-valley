@@ -95,7 +95,7 @@ export const ComplementaryScreen: React.FC<ComplementaryScreenProps> = ({
 
   // Handle feedback changes
   useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     if (feedback === 'correct') {
       haptics.triggerSuccess();
@@ -153,7 +153,6 @@ export const ComplementaryScreen: React.FC<ComplementaryScreenProps> = ({
       >
         <GameHeader
           level={gameState.level}
-          score={gameState.score}
           streak={gameState.streak}
           lives={GAME_CONFIG.maxWrongAnswers - (gameState.totalAnswers - gameState.correctAnswers)}
           isZenMode={false}
@@ -294,11 +293,11 @@ const styles = StyleSheet.create({
   },
   choiceCorrect: {
     borderWidth: 4,
-    borderColor: '#4CAF50',
+    borderColor: COLORS.accent.sage,
   },
   choiceIncorrect: {
     borderWidth: 4,
-    borderColor: '#F44336',
+    borderColor: COLORS.accent.coral,
     opacity: 0.7,
   },
 });

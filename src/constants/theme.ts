@@ -6,19 +6,35 @@ export const COLORS = {
   },
   accent: {
     coral: '#e8a598',
+    coralDark: '#d47060',
+    coralDeep: '#c45a4a',
+    coralLight: '#e89888',
+    coralMuted: '#d4918a',
     sage: '#a8c5b5',
+    sageDark: '#6B9A88',
     sky: '#9ec5e8',
     lavender: '#c5b5d4',
     sand: '#e8d5b5',
+    gold: '#F5E6B8',
   },
   text: {
     primary: '#4a4a4a',
     secondary: '#5a5a5a',
+    dark: '#2D3436',
   },
   white: '#ffffff',
   shadow: {
     soft: 'rgba(74, 74, 74, 0.1)',
     medium: 'rgba(74, 74, 74, 0.15)',
+    dark: 'rgba(74, 74, 74, 0.25)',
+  },
+  // UI element colors
+  missing: {
+    base: '#E5E0DB',
+    pattern: '#D8D3CE',
+  },
+  gradient: {
+    sageMid: '#9ec5b8',
   },
 };
 

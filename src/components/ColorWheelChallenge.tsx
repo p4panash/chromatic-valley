@@ -74,7 +74,12 @@ export const ColorWheelChallenge: React.FC<ColorWheelChallengeProps> = memo(({
         </View>
       </View>
 
-      {!isZenMode && <Timer timeLeft={round.timeLeft} />}
+      {/* Timer at bottom */}
+      {!isZenMode && (
+        <View style={styles.timerContainer}>
+          <Timer timeLeft={round.timeLeft} />
+        </View>
+      )}
     </View>
   );
 });
@@ -86,6 +91,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-around',
     alignItems: 'center',
+  },
+  timerContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 10,
   },
   instruction: {
     fontSize: 15,

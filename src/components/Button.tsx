@@ -50,7 +50,7 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant =
         </Animated.View>
       ) : (
         <LinearGradient
-          colors={[COLORS.accent.coral, '#d4918a']}
+          colors={[COLORS.accent.coral, COLORS.accent.coralMuted]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}

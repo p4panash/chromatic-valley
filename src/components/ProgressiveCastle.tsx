@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
   interpolate,
   Extrapolation,
+  SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Rect, Polygon, Circle, G } from 'react-native-svg';
 import { COLORS } from '../constants/theme';
@@ -21,14 +22,14 @@ interface ProgressiveCastleProps {
 const CASTLE_WIDTH = Math.min(Dimensions.get('window').width * 0.7, 280);
 const CASTLE_HEIGHT = CASTLE_WIDTH * 1.4;
 
-// Monument Valley colors
+// Monument Valley colors using theme constants
 const CASTLE_COLORS = {
-  foundation: '#E8D5B5', // Sand
-  walls: '#A8C5B5',      // Sage
-  tower: '#E8A598',      // Coral
-  windows: '#9EC5E8',    // Sky blue
-  flags: '#C5B5D4',      // Lavender
-  crown: '#F5E6B8',      // Butter cream
+  foundation: COLORS.accent.sand,
+  walls: COLORS.accent.sage,
+  tower: COLORS.accent.coral,
+  windows: COLORS.accent.sky,
+  flags: COLORS.accent.lavender,
+  crown: COLORS.accent.gold,
 };
 
 const stageOrder: CastleStage[] = ['foundation', 'walls', 'tower', 'details', 'crown'];
@@ -40,9 +41,9 @@ const getStageIndex = (stage: CastleStage): number => {
 // Animated layer component that wraps SVG content
 interface AnimatedLayerProps {
   children: React.ReactNode;
-  scale: Animated.SharedValue<number>;
+  scale: SharedValue<number>;
   translateY?: number;
-  opacity?: Animated.SharedValue<number>;
+  opacity?: SharedValue<number>;
 }
 
 const AnimatedLayer: React.FC<AnimatedLayerProps> = ({ children, scale, translateY = 0, opacity }) => {
@@ -240,7 +241,7 @@ const CastleComponent: React.FC<ProgressiveCastleProps> = ({ progress }) => {
             y={CASTLE_HEIGHT - 205}
             width={2}
             height={25}
-            fill="#6B9A88"
+            fill={COLORS.accent.sageDark}
           />
           <Polygon
             points={`${cx + 1},${CASTLE_HEIGHT - 205} ${cx + 18},${CASTLE_HEIGHT - 198} ${cx + 1},${CASTLE_HEIGHT - 191}`}

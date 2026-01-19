@@ -12,5 +12,6 @@ export { ColorWheel } from './ColorWheel';
 export { ColorMatchChallenge } from './ColorMatchChallenge';
 export { ColorWheelChallenge } from './ColorWheelChallenge';
 export { ProgressiveCastle } from './ProgressiveCastle';
+export { MiniCastle } from './MiniCastle';
 export { ContextualTutorial } from './ContextualTutorial';
 export { StreakCelebration } from './StreakCelebration';

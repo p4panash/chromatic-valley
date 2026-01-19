@@ -61,7 +61,7 @@ export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(20);
-  const autoDismissTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onDismissRef = useRef(onDismiss);
 
   // Keep ref updated with latest callback

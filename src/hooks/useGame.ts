@@ -36,6 +36,7 @@ const initialGameState: GameState = {
   mode: 'unified',
   wrongAnswers: 0,
   roundsSinceSwitch: 0,
+  answerColors: [],
 };
 
 // Streak milestones for celebrations
@@ -66,7 +67,7 @@ export const useGame = (options: UseGameOptions = {}) => {
   const timerRef = useRef<number | null>(null);
   const timerActiveRef = useRef<boolean>(false);
   const startTimeRef = useRef<number>(0);
-  const pendingTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const pendingTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const gameStateRef = useRef<GameState>(gameState);
   const roundStateRef = useRef<UnifiedRoundState | null>(roundState);
 
@@ -160,7 +161,7 @@ export const useGame = (options: UseGameOptions = {}) => {
     pendingTimeoutsRef.current = [];
   }, []);
 
-  const scheduleTimeout = useCallback((callback: () => void, delay: number) => {
+  const scheduleTimeout = useCallback((callback: () => void, delay: number): ReturnType<typeof setTimeout> => {
     const id = setTimeout(() => {
       pendingTimeoutsRef.current = pendingTimeoutsRef.current.filter((t) => t !== id);
       callback();
@@ -423,6 +424,11 @@ export const useGame = (options: UseGameOptions = {}) => {
           scheduleTimeout(() => setStreakMilestone(null), 1500);
         }
 
+        // Extract the correct answer color for castle windows
+        const answerColor = currentRoundState.challengeType === 'color-match'
+          ? currentRoundState.targetColor.hex
+          : currentRoundState.correctColor;
+
         setGameState((prev) => ({
           ...prev,
           score: prev.score + points,
@@ -431,6 +437,7 @@ export const useGame = (options: UseGameOptions = {}) => {
           correctAnswers: prev.correctAnswers + 1,
           totalAnswers: prev.totalAnswers + 1,
           level: prev.level + 1,
+          answerColors: [...prev.answerColors, answerColor].slice(-10), // Keep last 10 colors
         }));
 
         setFeedback('correct');

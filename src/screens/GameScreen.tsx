@@ -8,7 +8,7 @@ import {
   BackgroundShapes,
   ColorMatchChallenge,
   ColorWheelChallenge,
-  ProgressiveCastle,
+  MiniCastle,
 } from '../components';
 import { useHaptics } from '../hooks';
 import { COLORS, GAME_CONFIG } from '../constants/theme';
@@ -71,11 +71,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     >
       <BackgroundShapes />
 
-      {/* Castle as centered background - subtle reward indicator */}
-      <View style={styles.castleBackground} pointerEvents="none">
-        <ProgressiveCastle progress={castleProgress} />
-      </View>
-
       <View
         style={[
           styles.content,
@@ -85,14 +80,25 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           },
         ]}
       >
-        <GameHeader
-          level={gameState.level}
-          score={gameState.score}
-          streak={gameState.streak}
-          lives={lives}
-          isZenMode={isZenMode}
-        />
+        {/* Header row with stats and castle on the right */}
+        <View style={styles.headerRow}>
+          <GameHeader
+            level={gameState.level}
+            streak={gameState.streak}
+            lives={lives}
+            isZenMode={isZenMode}
+          />
+          <View style={styles.castleSide}>
+            <MiniCastle
+              progress={castleProgress}
+              score={gameState.score}
+              answerColors={gameState.answerColors}
+              size={70}
+            />
+          </View>
+        </View>
 
+        {/* Challenge area */}
         <View style={styles.gameArea}>
           {roundState.challengeType === 'color-match' ? (
             <ColorMatchChallenge
@@ -123,19 +129,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  castleBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    opacity: 0.25,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  castleSide: {
+    alignItems: 'center',
+    marginLeft: 10,
   },
   gameArea: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { memo, useEffect } from 'react';
+import React, { memo, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
   withSequence,
   withDelay,
+  withRepeat,
   Easing,
   runOnJS,
   interpolate,
@@ -33,10 +34,15 @@ const CONFETTI_COLORS = [
   COLORS.accent.sky,
   COLORS.accent.lavender,
   COLORS.accent.sand,
+  COLORS.accent.gold,
+  COLORS.white,
 ];
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const FACE_SIZE = 80;
+const CONFETTI_COUNT = 24;
+const STAR_COUNT = 8;
+const RING_COUNT = 3;
 
 interface FaceProps {
   size: number;
@@ -83,39 +89,129 @@ HappyFace.displayName = 'HappyFace';
 interface ConfettiParticleProps {
   index: number;
   color: string;
+  total: number;
 }
 
-const ConfettiParticle: React.FC<ConfettiParticleProps> = memo(({ index, color }) => {
+const ConfettiParticle: React.FC<ConfettiParticleProps> = memo(({ index, color, total }) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const rotation = useSharedValue(0);
+  const rotationY = useSharedValue(0);
   const opacity = useSharedValue(1);
   const scale = useSharedValue(0);
 
-  const angle = (index / 10) * Math.PI * 2;
-  const distance = 80 + Math.random() * 60;
+  // Create more spread-out explosion pattern
+  const angle = (index / total) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+  const distance = 100 + Math.random() * 80;
   const endX = Math.cos(angle) * distance;
-  const endY = Math.sin(angle) * distance + 100;
+  const endY = Math.sin(angle) * distance + 120 + Math.random() * 40;
+
+  // Randomize particle shape
+  const isRectangle = index % 3 === 0;
+  const isCircle = index % 3 === 1;
+  const particleWidth = isCircle ? 10 : (isRectangle ? 6 : 10);
+  const particleHeight = isCircle ? 10 : (isRectangle ? 14 : 6);
+  const borderRadius = isCircle ? 5 : 2;
 
   useEffect(() => {
-    const delay = index * 30;
+    const delay = index * 20;
 
-    scale.value = withDelay(delay, withSpring(1, { damping: 8 }));
+    scale.value = withDelay(delay, withSpring(1, { damping: 6, stiffness: 200 }));
     translateX.value = withDelay(
-      delay + 100,
-      withTiming(endX, { duration: 800, easing: Easing.out(Easing.quad) })
+      delay + 50,
+      withTiming(endX, { duration: 900, easing: Easing.out(Easing.cubic) })
     );
     translateY.value = withDelay(
-      delay + 100,
-      withTiming(endY, { duration: 800, easing: Easing.in(Easing.quad) })
+      delay + 50,
+      withTiming(endY, { duration: 900, easing: Easing.in(Easing.quad) })
     );
     rotation.value = withDelay(
       delay,
-      withTiming(360 + Math.random() * 360, { duration: 1000 })
+      withTiming(720 + Math.random() * 720, { duration: 1100 })
+    );
+    // 3D flip effect
+    rotationY.value = withDelay(
+      delay,
+      withTiming(360 * (2 + Math.floor(Math.random() * 3)), { duration: 1100 })
     );
     opacity.value = withDelay(
-      delay + 600,
+      delay + 700,
       withTiming(0, { duration: 400 })
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { rotate: `${rotation.value}deg` },
+      { rotateY: `${rotationY.value}deg` },
+      { scale: scale.value },
+    ],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.confettiParticle,
+        {
+          backgroundColor: color,
+          width: particleWidth,
+          height: particleHeight,
+          borderRadius: borderRadius,
+        },
+        animatedStyle,
+      ]}
+    />
+  );
+});
+
+ConfettiParticle.displayName = 'ConfettiParticle';
+
+// Star burst component for extra celebration
+interface StarBurstProps {
+  index: number;
+}
+
+const StarBurst: React.FC<StarBurstProps> = memo(({ index }) => {
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const rotation = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+
+  const angle = (index / STAR_COUNT) * Math.PI * 2;
+  const distance = 60 + index * 10;
+  const endX = Math.cos(angle) * distance;
+  const endY = Math.sin(angle) * distance;
+  const color = CONFETTI_COLORS[index % CONFETTI_COLORS.length];
+
+  useEffect(() => {
+    const delay = 100 + index * 50;
+
+    scale.value = withDelay(
+      delay,
+      withSequence(
+        withSpring(1.5, { damping: 4, stiffness: 150 }),
+        withTiming(0, { duration: 600 })
+      )
+    );
+    translateX.value = withDelay(
+      delay,
+      withTiming(endX, { duration: 800, easing: Easing.out(Easing.cubic) })
+    );
+    translateY.value = withDelay(
+      delay,
+      withTiming(endY, { duration: 800, easing: Easing.out(Easing.cubic) })
+    );
+    rotation.value = withDelay(
+      delay,
+      withTiming(180, { duration: 800 })
+    );
+    opacity.value = withDelay(
+      delay + 500,
+      withTiming(0, { duration: 300 })
     );
   }, []);
 
@@ -130,17 +226,78 @@ const ConfettiParticle: React.FC<ConfettiParticleProps> = memo(({ index, color }
   }));
 
   return (
+    <Animated.View style={[styles.star, animatedStyle]}>
+      <View style={[styles.starPoint, { backgroundColor: color }]} />
+      <View style={[styles.starPointHorizontal, { backgroundColor: color }]} />
+      <View style={[styles.starPointDiagonal1, { backgroundColor: color }]} />
+      <View style={[styles.starPointDiagonal2, { backgroundColor: color }]} />
+    </Animated.View>
+  );
+});
+
+StarBurst.displayName = 'StarBurst';
+
+// Expanding ring component
+interface ExpandingRingProps {
+  index: number;
+}
+
+const ExpandingRing: React.FC<ExpandingRingProps> = memo(({ index }) => {
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0.8);
+
+  const color = [COLORS.accent.coral, COLORS.accent.sky, COLORS.accent.lavender][index];
+
+  useEffect(() => {
+    const delay = index * 150;
+
+    scale.value = withDelay(
+      delay,
+      withTiming(3, { duration: 800, easing: Easing.out(Easing.cubic) })
+    );
+    opacity.value = withDelay(
+      delay,
+      withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) })
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
     <Animated.View
       style={[
-        styles.confettiParticle,
-        { backgroundColor: color },
+        styles.expandingRing,
+        { borderColor: color },
         animatedStyle,
       ]}
     />
   );
 });
 
-ConfettiParticle.displayName = 'ConfettiParticle';
+ExpandingRing.displayName = 'ExpandingRing';
+
+// Shimmer effect on the face
+const FaceShimmer: React.FC = memo(() => {
+  const translateX = useSharedValue(-50);
+
+  useEffect(() => {
+    translateX.value = withDelay(
+      300,
+      withTiming(50, { duration: 600, easing: Easing.inOut(Easing.ease) })
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { rotate: '-20deg' }],
+  }));
+
+  return <Animated.View style={[styles.shimmer, animatedStyle]} />;
+});
+
+FaceShimmer.displayName = 'FaceShimmer';
 
 export const StreakCelebration: React.FC<StreakCelebrationProps> = memo(({
   streak,
@@ -150,25 +307,62 @@ export const StreakCelebration: React.FC<StreakCelebrationProps> = memo(({
   const containerOpacity = useSharedValue(0);
   const textScale = useSharedValue(0);
   const bounceY = useSharedValue(0);
+  const faceRotation = useSharedValue(0);
+  const glowOpacity = useSharedValue(0);
 
   const message = CELEBRATION_MESSAGES[streak] || 'Amazing!';
+
+  // Memoize confetti particles to prevent recalculation
+  const confettiParticles = useMemo(() =>
+    Array.from({ length: CONFETTI_COUNT }).map((_, index) => ({
+      index,
+      color: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
+    })),
+    []
+  );
 
   useEffect(() => {
     // Animate in
     containerOpacity.value = withTiming(1, { duration: 200 });
     containerScale.value = withSequence(
-      withSpring(1.1, { damping: 6 }),
-      withSpring(1, { damping: 10 })
+      withSpring(1.15, { damping: 5, stiffness: 150 }),
+      withSpring(1, { damping: 8 })
     );
 
-    // Bounce animation
+    // Bounce animation with wiggle
     bounceY.value = withSequence(
-      withTiming(-10, { duration: 200 }),
-      withSpring(0, { damping: 6 })
+      withTiming(-15, { duration: 200, easing: Easing.out(Easing.quad) }),
+      withSpring(0, { damping: 4 })
     );
 
-    // Text scale
-    textScale.value = withDelay(200, withSpring(1, { damping: 8 }));
+    // Subtle face rotation wiggle
+    faceRotation.value = withDelay(
+      200,
+      withSequence(
+        withTiming(-5, { duration: 100 }),
+        withTiming(5, { duration: 100 }),
+        withTiming(-3, { duration: 100 }),
+        withTiming(3, { duration: 100 }),
+        withTiming(0, { duration: 100 })
+      )
+    );
+
+    // Glow pulse
+    glowOpacity.value = withSequence(
+      withTiming(0.6, { duration: 200 }),
+      withTiming(0.3, { duration: 400 }),
+      withTiming(0.5, { duration: 300 }),
+      withTiming(0, { duration: 300 })
+    );
+
+    // Text scale with bounce
+    textScale.value = withDelay(
+      150,
+      withSequence(
+        withSpring(1.1, { damping: 4, stiffness: 200 }),
+        withSpring(1, { damping: 10 })
+      )
+    );
 
     // Auto-dismiss after 1.5 seconds
     const timeout = setTimeout(() => {
@@ -176,7 +370,7 @@ export const StreakCelebration: React.FC<StreakCelebrationProps> = memo(({
         runOnJS(onComplete)();
       });
       containerScale.value = withTiming(0.8, { duration: 300 });
-    }, 1200);
+    }, 1400);
 
     return () => clearTimeout(timeout);
   }, []);
@@ -189,26 +383,53 @@ export const StreakCelebration: React.FC<StreakCelebrationProps> = memo(({
     ],
   }));
 
+  const faceStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${faceRotation.value}deg` }],
+  }));
+
   const textStyle = useAnimatedStyle(() => ({
     transform: [{ scale: textScale.value }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
   }));
 
   return (
     <View style={styles.overlay} pointerEvents="none">
       <Animated.View style={[styles.container, containerStyle]}>
+        {/* Expanding rings */}
+        {Array.from({ length: RING_COUNT }).map((_, index) => (
+          <ExpandingRing key={`ring-${index}`} index={index} />
+        ))}
+
+        {/* Star bursts */}
+        {Array.from({ length: STAR_COUNT }).map((_, index) => (
+          <StarBurst key={`star-${index}`} index={index} />
+        ))}
+
         {/* Confetti particles */}
         <View style={styles.confettiContainer}>
-          {Array.from({ length: 10 }).map((_, index) => (
+          {confettiParticles.map(({ index, color }) => (
             <ConfettiParticle
-              key={index}
+              key={`confetti-${index}`}
               index={index}
-              color={CONFETTI_COLORS[index % CONFETTI_COLORS.length]}
+              color={color}
+              total={CONFETTI_COUNT}
             />
           ))}
         </View>
 
-        {/* Face */}
-        <HappyFace size={FACE_SIZE} />
+        {/* Background glow */}
+        <Animated.View style={[styles.faceGlow, glowStyle]} />
+
+        {/* Face with shimmer */}
+        <Animated.View style={faceStyle}>
+          <View style={styles.faceWrapper}>
+            <HappyFace size={FACE_SIZE} />
+            <FaceShimmer />
+          </View>
+        </Animated.View>
 
         {/* Celebration text */}
         <Animated.View style={[styles.textContainer, textStyle]}>
@@ -246,9 +467,6 @@ const styles = StyleSheet.create({
   },
   confettiParticle: {
     position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 2,
   },
   face: {
     backgroundColor: COLORS.white,
@@ -260,18 +478,30 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  faceWrapper: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: FACE_SIZE / 2,
+  },
+  faceGlow: {
+    position: 'absolute',
+    width: FACE_SIZE + 40,
+    height: FACE_SIZE + 40,
+    borderRadius: (FACE_SIZE + 40) / 2,
+    backgroundColor: COLORS.accent.lavender,
+  },
   eyesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
   },
   eye: {
-    backgroundColor: '#2D3436',
+    backgroundColor: COLORS.text.dark,
   },
   mouthHappy: {
     backgroundColor: 'transparent',
     borderBottomWidth: 4,
-    borderBottomColor: '#2D3436',
+    borderBottomColor: COLORS.text.dark,
     borderLeftWidth: 4,
     borderLeftColor: 'transparent',
     borderRightWidth: 4,
@@ -296,5 +526,58 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: FONTS.medium,
     color: COLORS.accent.coral,
+  },
+  // Star styles
+  star: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  starPoint: {
+    position: 'absolute',
+    width: 3,
+    height: 16,
+    borderRadius: 1.5,
+  },
+  starPointHorizontal: {
+    position: 'absolute',
+    width: 16,
+    height: 3,
+    borderRadius: 1.5,
+  },
+  starPointDiagonal1: {
+    position: 'absolute',
+    width: 3,
+    height: 12,
+    borderRadius: 1.5,
+    transform: [{ rotate: '45deg' }],
+  },
+  starPointDiagonal2: {
+    position: 'absolute',
+    width: 3,
+    height: 12,
+    borderRadius: 1.5,
+    transform: [{ rotate: '-45deg' }],
+  },
+  // Expanding ring styles
+  expandingRing: {
+    position: 'absolute',
+    width: FACE_SIZE,
+    height: FACE_SIZE,
+    borderRadius: FACE_SIZE / 2,
+    borderWidth: 3,
+    backgroundColor: 'transparent',
+  },
+  // Shimmer style
+  shimmer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
 });
