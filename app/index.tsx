@@ -8,10 +8,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StartScreen, GameScreen, ResultScreen } from '../src/screens';
 import { ContextualTutorial, StreakCelebration } from '../src/components';
-import { useGame, useHaptics, useStorage } from '../src/hooks';
+import { useGame, useHaptics, useStorage, useSound } from '../src/hooks';
+import { SoundProvider } from '../src/contexts';
 import type { GameScreen as GameScreenType, TutorialMechanic } from '../src/types';
 
-export default function App() {
+function GameApp() {
   const [currentScreen, setCurrentScreen] = useState<GameScreenType>('start');
   const [activeTutorial, setActiveTutorial] = useState<TutorialMechanic | null>(null);
 
@@ -27,6 +28,7 @@ export default function App() {
   } = useGame({ tutorialActive: activeTutorial !== null });
   const haptics = useHaptics();
   const storage = useStorage();
+  const { playSound } = useSound();
 
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [previousHighScore, setPreviousHighScore] = useState(0);
@@ -40,8 +42,27 @@ export default function App() {
     if (streakMilestone && streakMilestone !== lastStreakMilestoneRef.current) {
       lastStreakMilestoneRef.current = streakMilestone;
       setShowCelebration(true);
+      playSound('streak');
     }
-  }, [streakMilestone]);
+  }, [streakMilestone, playSound]);
+
+  // Play sounds on feedback
+  useEffect(() => {
+    if (feedback === 'correct') {
+      playSound('correct');
+    } else if (feedback === 'incorrect' || feedback === 'timeout') {
+      playSound('incorrect');
+    }
+  }, [feedback, playSound]);
+
+  // Play sound on level up
+  const prevLevelRef = useRef(gameState.level);
+  useEffect(() => {
+    if (gameState.level > prevLevelRef.current && gameState.isPlaying) {
+      playSound('levelUp');
+    }
+    prevLevelRef.current = gameState.level;
+  }, [gameState.level, gameState.isPlaying, playSound]);
 
   const handleCelebrationComplete = useCallback(() => {
     setShowCelebration(false);
@@ -136,33 +157,37 @@ export default function App() {
 
   const handleStart = useCallback(() => {
     haptics.triggerMedium();
+    playSound('tap');
     scoreSavedRef.current = false;
     startGame('unified');
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics]);
+  }, [startGame, haptics, playSound]);
 
   const handleStartZen = useCallback(() => {
     haptics.triggerMedium();
+    playSound('tap');
     scoreSavedRef.current = false;
     startGame('zen');
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics]);
+  }, [startGame, haptics, playSound]);
 
   const handleRestart = useCallback(() => {
     haptics.triggerMedium();
+    playSound('tap');
     scoreSavedRef.current = false;
     startGame(gameState.mode);
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
-  }, [startGame, haptics, gameState.mode]);
+  }, [startGame, haptics, gameState.mode, playSound]);
 
   const handleHome = useCallback(() => {
     haptics.triggerLight();
+    playSound('tap');
     setCurrentScreen('start');
     triggeredTutorialsRef.current.clear();
-  }, [haptics]);
+  }, [haptics, playSound]);
 
   // Check if game has ended and save high score
   useEffect(() => {
@@ -174,6 +199,9 @@ export default function App() {
       setPreviousHighScore(currentHighScore);
       setIsNewHighScore(isNewRecord);
       scoreSavedRef.current = false;
+
+      // Play game over sound
+      playSound('gameOver');
 
       const timer = setTimeout(async () => {
         if (isNewRecord && !scoreSavedRef.current) {
@@ -195,7 +223,7 @@ export default function App() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [gameState.isPlaying, gameState.totalAnswers, gameState.score, gameState.mode, currentScreen, storage]);
+  }, [gameState.isPlaying, gameState.totalAnswers, gameState.score, gameState.mode, currentScreen, storage, playSound]);
 
   return (
     <>
@@ -261,6 +289,14 @@ export default function App() {
         </Animated.View>
       )}
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <SoundProvider>
+      <GameApp />
+    </SoundProvider>
   );
 }
 

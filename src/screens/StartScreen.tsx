@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Monument, Button, BackgroundShapes } from '../components';
+import { useSoundContext } from '../contexts';
 import { COLORS, FONTS } from '../constants/theme';
 
 interface StartScreenProps {
@@ -12,6 +13,7 @@ interface StartScreenProps {
 
 export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen }) => {
   const insets = useSafeAreaInsets();
+  const { isMuted, toggleMute } = useSoundContext();
 
   return (
     <LinearGradient
@@ -19,6 +21,18 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen })
       style={styles.container}
     >
       <BackgroundShapes />
+
+      {/* Sound toggle button */}
+      <TouchableOpacity
+        style={[styles.soundButton, { top: insets.top + 16 }]}
+        onPress={toggleMute}
+        activeOpacity={0.7}
+      >
+        <View style={styles.soundButtonInner}>
+          <Text style={styles.soundIcon}>{isMuted ? '🔇' : '🔊'}</Text>
+        </View>
+      </TouchableOpacity>
+
       <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
         <Monument />
         <Text style={styles.title}>Chromatic Valley</Text>
@@ -41,6 +55,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  soundButton: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 10,
+  },
+  soundButtonInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(74, 74, 74, 0.1)',
+    shadowColor: COLORS.shadow.medium,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  soundIcon: {
+    fontSize: 20,
   },
   title: {
     fontSize: 32,
