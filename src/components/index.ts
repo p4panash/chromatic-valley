@@ -15,3 +15,4 @@ export { ProgressiveCastle } from './ProgressiveCastle';
 export { MiniCastle } from './MiniCastle';
 export { ContextualTutorial } from './ContextualTutorial';
 export { StreakCelebration } from './StreakCelebration';
+export { SoundIcon } from './SoundIcon';

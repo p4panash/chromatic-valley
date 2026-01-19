@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Monument, Button, BackgroundShapes } from '../components';
+import { Monument, Button, BackgroundShapes, SoundIcon } from '../components';
 import { useSoundContext } from '../contexts';
 import { COLORS, FONTS } from '../constants/theme';
 
@@ -29,7 +29,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen })
         activeOpacity={0.7}
       >
         <View style={styles.soundButtonInner}>
-          <Text style={styles.soundIcon}>{isMuted ? '🔇' : '🔊'}</Text>
+          <SoundIcon muted={isMuted} size={22} />
         </View>
       </TouchableOpacity>
 
@@ -75,9 +75,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-  },
-  soundIcon: {
-    fontSize: 20,
   },
   title: {
     fontSize: 32,
