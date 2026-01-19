@@ -36,28 +36,19 @@ function GameApp() {
   const scoreSavedRef = useRef(false);
   const lastStreakMilestoneRef = useRef<number | null>(null);
   const triggeredTutorialsRef = useRef<Set<TutorialMechanic>>(new Set());
-  const bgmStartedRef = useRef(false);
 
   // Try to start BGM on app load (works on most devices)
+  // Don't set the flag here - let user interaction be the reliable trigger
   useEffect(() => {
-    if (!bgmStartedRef.current) {
-      // Delay slightly to ensure audio is loaded
-      const timer = setTimeout(() => {
-        if (!bgmStartedRef.current) {
-          bgmStartedRef.current = true;
-          startBgm();
-        }
-      }, 800);
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => {
+      startBgm();
+    }, 800);
+    return () => clearTimeout(timer);
   }, [startBgm]);
 
-  // Fallback: ensure BGM plays on user interaction (for strict mobile policies)
+  // Ensure BGM plays on user interaction (reliable fallback for all devices)
   const ensureBgmPlaying = useCallback(() => {
-    if (!bgmStartedRef.current) {
-      bgmStartedRef.current = true;
-      startBgm();
-    }
+    startBgm();
   }, [startBgm]);
 
   // Handle streak celebrations
