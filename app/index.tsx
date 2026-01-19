@@ -8,8 +8,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StartScreen, GameScreen, ResultScreen } from '../src/screens';
 import { ContextualTutorial, StreakCelebration } from '../src/components';
-import { useGame, useHaptics, useStorage, useSound } from '../src/hooks';
-import { SoundProvider } from '../src/contexts';
+import { useGame, useHaptics, useStorage } from '../src/hooks';
+import { SoundProvider, useSoundContext } from '../src/contexts';
 import type { GameScreen as GameScreenType, TutorialMechanic } from '../src/types';
 
 function GameApp() {
@@ -28,7 +28,7 @@ function GameApp() {
   } = useGame({ tutorialActive: activeTutorial !== null });
   const haptics = useHaptics();
   const storage = useStorage();
-  const { playSound, startBgm } = useSound();
+  const { playSound, startBgm } = useSoundContext();
 
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [previousHighScore, setPreviousHighScore] = useState(0);
