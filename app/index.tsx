@@ -38,7 +38,21 @@ function GameApp() {
   const triggeredTutorialsRef = useRef<Set<TutorialMechanic>>(new Set());
   const bgmStartedRef = useRef(false);
 
-  // Start BGM on first user interaction (required for mobile audio)
+  // Try to start BGM on app load (works on most devices)
+  useEffect(() => {
+    if (!bgmStartedRef.current) {
+      // Delay slightly to ensure audio is loaded
+      const timer = setTimeout(() => {
+        if (!bgmStartedRef.current) {
+          bgmStartedRef.current = true;
+          startBgm();
+        }
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [startBgm]);
+
+  // Fallback: ensure BGM plays on user interaction (for strict mobile policies)
   const ensureBgmPlaying = useCallback(() => {
     if (!bgmStartedRef.current) {
       bgmStartedRef.current = true;
