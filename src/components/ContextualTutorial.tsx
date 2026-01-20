@@ -8,6 +8,7 @@ import Animated, {
   withDelay,
   runOnJS,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { COLORS, FONTS } from '../constants/theme';
 import type { TutorialMechanic } from '../types';
 
@@ -28,13 +29,13 @@ const TUTORIAL_CONTENT: Record<TutorialMechanic, { title: string; message: strin
     position: 'center',
   },
   timer: {
-    title: 'Beat the Clock',
-    message: 'Answer quickly for bonus points!',
+    title: 'Game Rules',
+    message: 'Answer quickly for bonus points! You have 3 lives - wrong answers cost one.',
     position: 'bottom',
   },
   streak: {
     title: 'Build Your Streak',
-    message: 'Consecutive correct answers multiply your score',
+    message: 'Consecutive correct answers multiply your score and build your castle!',
     position: 'top',
   },
   lives: {
@@ -120,8 +121,10 @@ export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
   };
 
   return (
-    <View style={[styles.overlay, getPositionStyle()]} pointerEvents="box-none">
-      <Pressable onPress={handleDismiss} style={styles.pressable}>
+    <Pressable style={styles.fullScreenOverlay} onPress={handleDismiss}>
+      <BlurView intensity={20} tint="light" style={styles.blurBackground} />
+      <View style={styles.dimOverlay} />
+      <View style={[styles.overlay, getPositionStyle()]}>
         <Animated.View style={[styles.container, containerStyle]}>
           <View style={styles.content}>
             <Text style={styles.title}>{content.title}</Text>
@@ -131,21 +134,31 @@ export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
             <Text style={styles.tapText}>Tap to continue</Text>
           </View>
         </Animated.View>
-      </Pressable>
-    </View>
+      </View>
+    </Pressable>
   );
 });
 
 ContextualTutorial.displayName = 'ContextualTutorial';
 
 const styles = StyleSheet.create({
+  fullScreenOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+  },
+  blurBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  dimOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+  },
   overlay: {
     position: 'absolute',
     left: 0,
     right: 0,
     alignItems: 'center',
     paddingHorizontal: 20,
-    zIndex: 100,
   },
   positionTop: {
     top: 120,
@@ -155,9 +168,6 @@ const styles = StyleSheet.create({
   },
   positionBottom: {
     bottom: 150,
-  },
-  pressable: {
-    maxWidth: SCREEN_WIDTH - 40,
   },
   container: {
     backgroundColor: COLORS.white,

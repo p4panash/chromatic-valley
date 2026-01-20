@@ -114,7 +114,7 @@ function GameApp() {
         return;
       }
 
-      // Timer tutorial - show on first game after seeing color-match (non-zen)
+      // Game Rules tutorial (timer + lives combined) - show on first game after seeing color-match (non-zen)
       if (
         gameState.mode !== 'zen' &&
         storage.hasSeenMechanic('color-match') &&
@@ -124,26 +124,7 @@ function GameApp() {
         return;
       }
 
-      // Lives tutorial - show on first game load (non-zen mode)
-      if (
-        gameState.mode !== 'zen' &&
-        storage.hasSeenMechanic('timer') &&
-        shouldShowTutorial('lives')
-      ) {
-        triggerTutorial('lives');
-        return;
-      }
-
-      // Castle building tutorial - show after lives explanation
-      if (
-        storage.hasSeenMechanic('lives') &&
-        shouldShowTutorial('castle-building')
-      ) {
-        triggerTutorial('castle-building');
-        return;
-      }
-
-      // Streak tutorial - show after first correct answer (this is still event-based, which is fine)
+      // Streak tutorial (includes castle info) - show after first correct answer
       if (gameState.streak === 1 && shouldShowTutorial('streak')) {
         triggerTutorial('streak');
         return;
@@ -165,6 +146,13 @@ function GameApp() {
   const handleDismissTutorial = useCallback(() => {
     if (activeTutorial) {
       storage.markMechanicSeen(activeTutorial);
+      // Mark related mechanics as seen for consolidated tutorials
+      if (activeTutorial === 'timer') {
+        storage.markMechanicSeen('lives');
+      }
+      if (activeTutorial === 'streak') {
+        storage.markMechanicSeen('castle-building');
+      }
       setActiveTutorial(null);
     }
   }, [activeTutorial, storage]);
