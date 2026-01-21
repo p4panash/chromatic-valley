@@ -16,8 +16,8 @@ interface StartScreenProps {
   onSetLifetimeScore?: (score: number) => void;
 }
 
-// Preset scores for testing harmony unlocks
-const TEST_SCORES = [0, 100, 300, 600, 1000, 2000, 4000];
+// Preset scores for testing harmony unlocks (matches HARMONY_CONFIG thresholds)
+const TEST_SCORES = [0, 500, 2000, 5000, 8000, 12000, 20000];
 
 export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory, onStats, lifetimeScore = 0, onResetData, onSetLifetimeScore }) => {
   const insets = useSafeAreaInsets();
