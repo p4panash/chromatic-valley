@@ -56,7 +56,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
   return (
     <LinearGradient
       colors={[backgroundColors.start, backgroundColors.end]}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: backgroundColors.end }]}
     >
       <BackgroundShapes unlockedColors={unlockedColors} />
 
