@@ -65,7 +65,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
         </View>
       </TouchableOpacity>
 
-      <View style={[styles.content, { paddingTop: insets.top + 60 }]}>
+      <View style={[styles.content, { paddingTop: insets.top + 80 }]}>
         <Text style={styles.title}>Chromatic Valley</Text>
         <Text style={styles.subtitle}>A journey through colors</Text>
 
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonContainer: {
-    marginTop: 60,
+    marginTop: 80,
     gap: 16,
     alignItems: 'center',
   },
