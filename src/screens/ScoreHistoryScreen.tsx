@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { BackgroundShapes, MiniCastle, BackButton, Button } from '../components';
+import { BackgroundShapes, MiniCastle, Button } from '../components';
 import { COLORS, FONTS, HARMONY_CONFIG, getEvolvingBackground, getUnlockedHarmonyColors } from '../constants/theme';
 import type { GameMode } from '../types';
 
@@ -102,9 +102,7 @@ export const ScoreHistoryScreen: React.FC<ScoreHistoryScreenProps> = ({
         >
           {/* Header */}
           <View style={styles.header}>
-            <BackButton onPress={onClose} size={40} />
             <Text style={styles.title}>Score History</Text>
-            <View style={styles.headerSpacer} />
           </View>
 
           {isEmpty ? (
@@ -185,6 +183,11 @@ export const ScoreHistoryScreen: React.FC<ScoreHistoryScreenProps> = ({
                   );
                 })}
               </ScrollView>
+
+              {/* Back Button */}
+              <View style={styles.backButtonContainer}>
+                <Button title="Back" onPress={onClose} variant="tertiary" fullWidth />
+              </View>
             </>
           )}
         </View>
@@ -202,20 +205,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
   title: {
-    flex: 1,
     fontSize: 20,
     fontWeight: FONTS.semiBold,
     color: COLORS.text.primary,
     textAlign: 'center',
     letterSpacing: 1,
-  },
-  headerSpacer: {
-    width: 40, // Match back button width for centering
   },
   sortContainer: {
     flexDirection: 'row',
@@ -356,5 +354,8 @@ const styles = StyleSheet.create({
   },
   emptyButtonContainer: {
     marginTop: 40,
+  },
+  backButtonContainer: {
+    paddingTop: 16,
   },
 });

@@ -15,9 +15,10 @@ interface ButtonProps {
   onPress: () => void;
   style?: ViewStyle;
   variant?: 'primary' | 'secondary' | 'tertiary' | 'zen';
+  fullWidth?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant = 'primary' }) => {
+export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant = 'primary', fullWidth = false }) => {
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
 
@@ -53,7 +54,7 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant =
       onPressOut={handlePressOut}
     >
       {isTertiary ? (
-        <Animated.View style={styles.tertiaryInner}>
+        <Animated.View style={[styles.tertiaryInner, fullWidth && styles.fullWidth]}>
           <Text style={styles.textTertiary}>{title}</Text>
         </Animated.View>
       ) : isZen ? (
@@ -165,5 +166,9 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
+  },
+  fullWidth: {
+    width: '100%',
+    paddingHorizontal: 0,
   },
 });

@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { BackgroundShapes, BackButton } from '../components';
+import { BackgroundShapes, Button } from '../components';
 import {
   COLORS,
   FONTS,
@@ -94,9 +94,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({
         >
           {/* Header */}
           <View style={styles.header}>
-            <BackButton onPress={onClose} size={40} />
             <Text style={styles.title}>Stats</Text>
-            <View style={styles.headerSpacer} />
           </View>
 
           {/* Lifetime Score Card */}
@@ -185,6 +183,11 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({
             <Ionicons name="bulb-outline" size={16} color={COLORS.accent.gold} />
             <Text style={styles.funFactText}>{funFact}</Text>
           </View>
+
+          {/* Back Button */}
+          <View style={styles.backButtonContainer}>
+            <Button title="Back" onPress={onClose} variant="tertiary" fullWidth />
+          </View>
         </View>
       </LinearGradient>
     </Animated.View>
@@ -200,20 +203,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
   },
   title: {
-    flex: 1,
     fontSize: 20,
     fontWeight: FONTS.semiBold,
     color: COLORS.text.primary,
     textAlign: 'center',
     letterSpacing: 1,
-  },
-  headerSpacer: {
-    width: 40,
   },
   scoreCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
@@ -343,7 +341,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     gap: 8,
-    marginTop: 'auto',
   },
   funFactText: {
     flex: 1,
@@ -352,5 +349,9 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     lineHeight: 18,
     fontStyle: 'italic',
+  },
+  backButtonContainer: {
+    marginTop: 'auto',
+    paddingTop: 16,
   },
 });
