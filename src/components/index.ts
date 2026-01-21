@@ -21,3 +21,4 @@ export { SoundIcon } from './SoundIcon';
 export { BackButton } from './BackButton';
 export { HarmonyUnlockBanner } from './HarmonyUnlockBanner';
 export { HarmonyIntroduction } from './HarmonyIntroduction';
+export { ZenModeSelector } from './ZenModeSelector';

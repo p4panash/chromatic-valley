@@ -11,7 +11,7 @@ import { ContextualTutorial, StreakCelebration, HarmonyUnlockBanner, HarmonyIntr
 import { useGame, useHaptics, useStorage } from '../src/hooks';
 import { HARMONY_CONFIG } from '../src/constants/theme';
 import { SoundProvider, useSoundContext } from '../src/contexts';
-import type { GameScreen as GameScreenType, TutorialMechanic } from '../src/types';
+import type { GameScreen as GameScreenType, TutorialMechanic, ZenHarmonyFilter } from '../src/types';
 
 function GameApp() {
   const [currentScreen, setCurrentScreen] = useState<GameScreenType>('start');
@@ -324,12 +324,12 @@ function GameApp() {
     lastStreakMilestoneRef.current = null;
   }, [startGame, haptics, playSound, ensureBgmPlaying]);
 
-  const handleStartZen = useCallback(() => {
+  const handleStartZen = useCallback((harmonyFilter: ZenHarmonyFilter = 'all') => {
     haptics.triggerMedium();
     playSound('tap');
     ensureBgmPlaying();
     scoreSavedRef.current = false;
-    startGame('zen');
+    startGame('zen', harmonyFilter);
     setCurrentScreen('game');
     lastStreakMilestoneRef.current = null;
   }, [startGame, haptics, playSound, ensureBgmPlaying]);

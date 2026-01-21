@@ -43,6 +43,9 @@ export type HarmonyType =
   | 'double-complementary'
   | 'monochromatic';
 
+// Zen mode harmony filter - 'all' for rotation, or specific harmony type
+export type ZenHarmonyFilter = 'all' | HarmonyType;
+
 // Legacy alias for backwards compatibility
 export type ChallengeType = 'color-match' | 'color-wheel';
 

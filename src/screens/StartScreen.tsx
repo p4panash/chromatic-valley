@@ -1,14 +1,15 @@
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, BackgroundShapes, SoundIcon, HarmonyPalette } from '../components';
+import { Button, BackgroundShapes, SoundIcon, HarmonyPalette, ZenModeSelector } from '../components';
 import { useSoundContext } from '../contexts';
 import { COLORS, FONTS, HARMONY_CONFIG, getEvolvingBackground, getUnlockedHarmonyColors } from '../constants/theme';
+import type { ZenHarmonyFilter } from '../types';
 
 interface StartScreenProps {
   onStart: () => void;
-  onStartZen: () => void;
+  onStartZen: (harmonyFilter?: ZenHarmonyFilter) => void;
   onHistory?: () => void;
   onStats?: () => void;
   lifetimeScore?: number;
@@ -24,6 +25,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
   const { height } = useWindowDimensions();
   const { isMuted, toggleMute, startBgm } = useSoundContext();
   const hasInteractedRef = useRef(false);
+  const [showZenSelector, setShowZenSelector] = useState(false);
 
   // Responsive spacing based on screen height
   const isSmallScreen = height < 750;
@@ -52,6 +54,19 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
     }
     toggleMute();
   }, [toggleMute, startBgm]);
+
+  const handleZenModePress = useCallback(() => {
+    setShowZenSelector(true);
+  }, []);
+
+  const handleZenSelect = useCallback((filter: ZenHarmonyFilter) => {
+    setShowZenSelector(false);
+    onStartZen(filter);
+  }, [onStartZen]);
+
+  const handleZenCancel = useCallback(() => {
+    setShowZenSelector(false);
+  }, []);
 
   return (
     <LinearGradient
@@ -87,7 +102,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
 
         <View style={[styles.buttonContainer, { marginTop: buttonTopMargin }]}>
           <Button title="Play" onPress={onStart} />
-          <Button title="Zen Mode" onPress={onStartZen} variant="zen" />
+          <Button title="Zen Mode" onPress={handleZenModePress} variant="zen" />
           <View style={styles.secondaryButtons}>
             {onStats && (
               <Button title="Stats" onPress={onStats} variant="tertiary" />
@@ -131,6 +146,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
           </View>
         )}
       </ScrollView>
+
+      {/* Zen Mode Harmony Selector */}
+      <ZenModeSelector
+        visible={showZenSelector}
+        onSelect={handleZenSelect}
+        onCancel={handleZenCancel}
+        lifetimeScore={lifetimeScore}
+      />
     </LinearGradient>
   );
 };

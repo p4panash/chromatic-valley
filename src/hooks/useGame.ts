@@ -35,6 +35,7 @@ import type {
   DoubleComplementaryRound,
   MonochromaticRound,
   HarmonyType,
+  ZenHarmonyFilter,
   CastleProgress,
   CastleStage,
 } from '../types';
@@ -77,6 +78,7 @@ export const useGame = (options: UseGameOptions = {}) => {
   const [timerPendingStart, setTimerPendingStart] = useState(false);
   const [newlyUnlockedHarmony, setNewlyUnlockedHarmony] = useState<typeof HARMONY_CONFIG[number] | null>(null);
   const [pendingHarmonyType, setPendingHarmonyType] = useState<HarmonyType | null>(null);
+  const [zenHarmonyFilter, setZenHarmonyFilter] = useState<ZenHarmonyFilter>('all');
 
   // Keep lifetime score in a ref for use in callbacks
   const lifetimeScoreRef = useRef(lifetimeScore);
@@ -107,6 +109,12 @@ export const useGame = (options: UseGameOptions = {}) => {
   useEffect(() => {
     roundStateRef.current = roundState;
   }, [roundState]);
+
+  // Keep zenHarmonyFilter ref in sync
+  const zenHarmonyFilterRef = useRef<ZenHarmonyFilter>(zenHarmonyFilter);
+  useEffect(() => {
+    zenHarmonyFilterRef.current = zenHarmonyFilter;
+  }, [zenHarmonyFilter]);
 
   // Calculate castle progress based on score
   const getCastleProgress = useCallback((score: number): CastleProgress => {
@@ -485,6 +493,13 @@ export const useGame = (options: UseGameOptions = {}) => {
 
   // Select next harmony type using weighted random selection
   const selectNextHarmony = useCallback((): HarmonyType => {
+    // If zen mode with specific harmony filter, always return that harmony
+    const currentMode = gameStateRef.current.mode;
+    const currentFilter = zenHarmonyFilterRef.current;
+    if (currentMode === 'zen' && currentFilter !== 'all') {
+      return currentFilter;
+    }
+
     const currentLifetimeScore = lifetimeScoreRef.current;
     const unlockedHarmonies = getUnlockedHarmonies(currentLifetimeScore);
 
@@ -506,6 +521,13 @@ export const useGame = (options: UseGameOptions = {}) => {
 
   // Decide which challenge type to use next
   const getNextChallengeType = useCallback((currentType: HarmonyType, roundsSinceSwitch: number): HarmonyType => {
+    // If zen mode with specific filter, never switch
+    const currentMode = gameStateRef.current.mode;
+    const currentFilter = zenHarmonyFilterRef.current;
+    if (currentMode === 'zen' && currentFilter !== 'all') {
+      return currentFilter;
+    }
+
     // Switch challenge type every 3-5 rounds
     const switchThreshold = 3 + Math.floor(Math.random() * 3);
     if (roundsSinceSwitch >= switchThreshold) {
@@ -797,16 +819,21 @@ export const useGame = (options: UseGameOptions = {}) => {
     [stopTimer, scheduleTimeout]
   );
 
-  const startGame = useCallback((mode: GameMode = 'unified') => {
+  const startGame = useCallback((mode: GameMode = 'unified', zenHarmonyFilterParam: ZenHarmonyFilter = 'all') => {
     clearAllTimeouts();
     stopTimer();
     setGameState({ ...initialGameState, isPlaying: true, mode });
     setRoundState(null);
     setFeedback(null);
-    setCurrentChallengeType('color-match');
+    // Set initial challenge type based on zen filter
+    const initialChallengeType = mode === 'zen' && zenHarmonyFilterParam !== 'all'
+      ? zenHarmonyFilterParam
+      : 'color-match';
+    setCurrentChallengeType(initialChallengeType);
     setStreakMilestone(null);
     setNewlyUnlockedHarmony(null);
     setPendingHarmonyType(null);
+    setZenHarmonyFilter(zenHarmonyFilterParam);
   }, [clearAllTimeouts, stopTimer]);
 
   const resetGame = useCallback(() => {
@@ -819,6 +846,7 @@ export const useGame = (options: UseGameOptions = {}) => {
     setStreakMilestone(null);
     setNewlyUnlockedHarmony(null);
     setPendingHarmonyType(null);
+    setZenHarmonyFilter('all');
   }, [clearAllTimeouts, stopTimer]);
 
   const clearNewlyUnlockedHarmony = useCallback(() => {
