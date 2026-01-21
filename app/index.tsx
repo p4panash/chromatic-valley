@@ -6,7 +6,7 @@ import Animated, {
   SlideInRight,
   SlideOutLeft,
 } from 'react-native-reanimated';
-import { StartScreen, GameScreen, ResultScreen, ScoreHistoryScreen } from '../src/screens';
+import { StartScreen, GameScreen, ResultScreen, ScoreHistoryScreen, StatsScreen } from '../src/screens';
 import { ContextualTutorial, StreakCelebration, HarmonyUnlockBanner, HarmonyIntroduction } from '../src/components';
 import { useGame, useHaptics, useStorage } from '../src/hooks';
 import { HARMONY_CONFIG } from '../src/constants/theme';
@@ -17,6 +17,7 @@ function GameApp() {
   const [currentScreen, setCurrentScreen] = useState<GameScreenType>('start');
   const [activeTutorial, setActiveTutorial] = useState<TutorialMechanic | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [previousHighScore, setPreviousHighScore] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -313,6 +314,16 @@ function GameApp() {
     setShowHistory(false);
   }, []);
 
+  const handleShowStats = useCallback(() => {
+    haptics.triggerLight();
+    playSound('tap');
+    setShowStats(true);
+  }, [haptics, playSound]);
+
+  const handleCloseStats = useCallback(() => {
+    setShowStats(false);
+  }, []);
+
   // Check if game has ended and save high score
   useEffect(() => {
     if (!gameState.isPlaying && gameState.totalAnswers > 0 && currentScreen === 'game') {
@@ -367,6 +378,7 @@ function GameApp() {
             onStart={handleStart}
             onStartZen={handleStartZen}
             onHistory={handleShowHistory}
+            onStats={handleShowStats}
             lifetimeScore={storage.lifetimeScore}
           />
         </Animated.View>
@@ -444,6 +456,14 @@ function GameApp() {
         <ScoreHistoryScreen
           highScores={storage.highScores}
           onClose={handleCloseHistory}
+          lifetimeScore={storage.lifetimeScore}
+        />
+      )}
+
+      {/* Stats Modal */}
+      {showStats && (
+        <StatsScreen
+          onClose={handleCloseStats}
           lifetimeScore={storage.lifetimeScore}
         />
       )}

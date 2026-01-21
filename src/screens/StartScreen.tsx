@@ -10,10 +10,11 @@ interface StartScreenProps {
   onStart: () => void;
   onStartZen: () => void;
   onHistory?: () => void;
+  onStats?: () => void;
   lifetimeScore?: number;
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory, lifetimeScore = 0 }) => {
+export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory, onStats, lifetimeScore = 0 }) => {
   const insets = useSafeAreaInsets();
   const { isMuted, toggleMute, startBgm } = useSoundContext();
   const hasInteractedRef = useRef(false);
@@ -69,9 +70,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
         <View style={styles.buttonContainer}>
           <Button title="Play" onPress={onStart} />
           <Button title="Zen Mode" onPress={onStartZen} variant="zen" />
-          {onHistory && (
-            <Button title="History" onPress={onHistory} variant="tertiary" />
-          )}
+          <View style={styles.secondaryButtons}>
+            {onStats && (
+              <Button title="Stats" onPress={onStats} variant="tertiary" />
+            )}
+            {onHistory && (
+              <Button title="History" onPress={onHistory} variant="tertiary" />
+            )}
+          </View>
         </View>
       </View>
     </LinearGradient>
@@ -128,5 +134,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     gap: 16,
     alignItems: 'center',
+  },
+  secondaryButtons: {
+    flexDirection: 'row',
+    gap: 12,
   },
 });
