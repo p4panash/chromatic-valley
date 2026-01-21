@@ -213,6 +213,29 @@ export const useStorage = () => {
     }
   }, []);
 
+  // Reset only harmony tutorials (keep game-rules, zen-rules, info-overview)
+  const resetHarmonyTutorials = useCallback(async () => {
+    const harmonyTypes = [
+      'color-match', 'triadic', 'complementary', 'split-complementary',
+      'analogous', 'tetradic', 'double-complementary', 'monochromatic'
+    ];
+    const nonHarmonyMechanics = data.mechanicsSeen.filter(
+      (m) => !harmonyTypes.includes(m)
+    );
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.MECHANICS_SEEN,
+        JSON.stringify(nonHarmonyMechanics)
+      );
+      setData((prev) => ({
+        ...prev,
+        mechanicsSeen: nonHarmonyMechanics,
+      }));
+    } catch (error) {
+      console.warn('Failed to reset harmony tutorials:', error);
+    }
+  }, [data.mechanicsSeen]);
+
   return {
     highScores: data.highScores,
     hasSeenTutorial: data.hasSeenTutorial,
@@ -231,5 +254,6 @@ export const useStorage = () => {
     addDiscoveredColors,
     clearAllData,
     resetTutorials,
+    resetHarmonyTutorials,
   };
 };

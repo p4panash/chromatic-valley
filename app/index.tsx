@@ -409,6 +409,8 @@ function GameApp() {
 
   const handleSetLifetimeScore = useCallback(async (score: number) => {
     await storage.setLifetimeScore(score);
+    // Also reset harmony tutorials so intros show again when testing
+    await storage.resetHarmonyTutorials();
   }, [storage]);
 
   // Check if game has ended and save high score
