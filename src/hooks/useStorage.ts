@@ -151,6 +151,19 @@ export const useStorage = () => {
     }
   }, [data.lifetimeScore]);
 
+  // Set lifetime score to a specific value (for dev/testing)
+  const setLifetimeScore = useCallback(async (score: number): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.LIFETIME_SCORE,
+        score.toString()
+      );
+      setData((prev) => ({ ...prev, lifetimeScore: score }));
+    } catch (error) {
+      console.warn('Failed to set lifetime score:', error);
+    }
+  }, []);
+
   // Add discovered colors from gameplay (organized by harmony type)
   const addDiscoveredColors = useCallback(async (harmonyType: string, colors: string[]) => {
     try {
@@ -214,6 +227,7 @@ export const useStorage = () => {
     getHighScore,
     isNewHighScore,
     addToLifetimeScore,
+    setLifetimeScore,
     addDiscoveredColors,
     clearAllData,
     resetTutorials,

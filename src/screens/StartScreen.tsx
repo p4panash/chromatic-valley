@@ -13,9 +13,13 @@ interface StartScreenProps {
   onStats?: () => void;
   lifetimeScore?: number;
   onResetData?: () => void;
+  onSetLifetimeScore?: (score: number) => void;
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory, onStats, lifetimeScore = 0, onResetData }) => {
+// Preset scores for testing harmony unlocks
+const TEST_SCORES = [0, 100, 300, 600, 1000, 2000, 4000];
+
+export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory, onStats, lifetimeScore = 0, onResetData, onSetLifetimeScore }) => {
   const insets = useSafeAreaInsets();
   const { isMuted, toggleMute, startBgm } = useSoundContext();
   const hasInteractedRef = useRef(false);
@@ -81,14 +85,37 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
           </View>
         </View>
 
-        {/* Dev reset button */}
-        {onResetData && (
-          <TouchableOpacity
-            style={[styles.resetButton, { paddingBottom: insets.bottom + 10 }]}
-            onPress={onResetData}
-          >
-            <Text style={styles.resetText}>Reset All Data</Text>
-          </TouchableOpacity>
+        {/* Dev tools */}
+        {(onResetData || onSetLifetimeScore) && (
+          <View style={[styles.devTools, { paddingBottom: insets.bottom + 10 }]}>
+            {onSetLifetimeScore && (
+              <View style={styles.scoreButtons}>
+                <Text style={styles.devLabel}>Set Score:</Text>
+                {TEST_SCORES.map((score) => (
+                  <TouchableOpacity
+                    key={score}
+                    style={[
+                      styles.scoreButton,
+                      lifetimeScore === score && styles.scoreButtonActive,
+                    ]}
+                    onPress={() => onSetLifetimeScore(score)}
+                  >
+                    <Text style={[
+                      styles.scoreButtonText,
+                      lifetimeScore === score && styles.scoreButtonTextActive,
+                    ]}>
+                      {score}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {onResetData && (
+              <TouchableOpacity onPress={onResetData}>
+                <Text style={styles.resetText}>Reset All Data</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
     </LinearGradient>
@@ -142,7 +169,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonContainer: {
-    marginTop: 40,
+    marginTop: 60,
     gap: 16,
     alignItems: 'center',
   },
@@ -150,18 +177,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  resetButton: {
+  devTools: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
+    gap: 8,
   },
-  resetText: {
-    fontSize: 12,
-    fontWeight: FONTS.regular,
+  devLabel: {
+    fontSize: 10,
+    fontWeight: FONTS.medium,
+    color: COLORS.text.secondary,
+    opacity: 0.5,
+    marginRight: 4,
+  },
+  scoreButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  scoreButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  scoreButtonActive: {
+    backgroundColor: COLORS.accent.sage,
+  },
+  scoreButtonText: {
+    fontSize: 10,
+    fontWeight: FONTS.medium,
     color: COLORS.text.secondary,
     opacity: 0.6,
+  },
+  scoreButtonTextActive: {
+    color: COLORS.white,
+    opacity: 1,
+  },
+  resetText: {
+    fontSize: 11,
+    fontWeight: FONTS.regular,
+    color: COLORS.text.secondary,
+    opacity: 0.5,
   },
 });

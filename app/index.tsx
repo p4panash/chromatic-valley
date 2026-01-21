@@ -407,6 +407,10 @@ function GameApp() {
     setAppKey(prev => prev + 1);
   }, [storage]);
 
+  const handleSetLifetimeScore = useCallback(async (score: number) => {
+    await storage.setLifetimeScore(score);
+  }, [storage]);
+
   // Check if game has ended and save high score
   useEffect(() => {
     if (!gameState.isPlaying && gameState.totalAnswers > 0 && currentScreen === 'game') {
@@ -464,6 +468,7 @@ function GameApp() {
             onStats={handleShowStats}
             lifetimeScore={storage.lifetimeScore}
             onResetData={handleResetData}
+            onSetLifetimeScore={handleSetLifetimeScore}
           />
         </Animated.View>
       )}
