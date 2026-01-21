@@ -178,10 +178,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   devTools: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    marginTop: 'auto',
     alignItems: 'center',
     paddingVertical: 12,
     gap: 8,
