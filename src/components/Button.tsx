@@ -14,7 +14,7 @@ interface ButtonProps {
   title: string;
   onPress: () => void;
   style?: ViewStyle;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'tertiary';
 }
 
 export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant = 'primary' }) => {
@@ -36,15 +36,26 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant =
   };
 
   const isSecondary = variant === 'secondary';
+  const isTertiary = variant === 'tertiary';
 
   return (
     <AnimatedPressable
-      style={[styles.container, isSecondary && styles.containerSecondary, animatedStyle, style]}
+      style={[
+        styles.container,
+        isSecondary && styles.containerSecondary,
+        isTertiary && styles.containerTertiary,
+        animatedStyle,
+        style,
+      ]}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
     >
-      {isSecondary ? (
+      {isTertiary ? (
+        <Animated.View style={styles.tertiaryInner}>
+          <Text style={styles.textTertiary}>{title}</Text>
+        </Animated.View>
+      ) : isSecondary ? (
         <Animated.View style={styles.secondaryInner}>
           <Text style={styles.textSecondary}>{title}</Text>
         </Animated.View>
@@ -104,6 +115,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: FONTS.medium,
     color: COLORS.accent.sage,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  containerTertiary: {
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tertiaryInner: {
+    paddingVertical: 14,
+    paddingHorizontal: 36,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: 1.5,
+    borderColor: COLORS.text.secondary,
+  },
+  textTertiary: {
+    fontSize: 13,
+    fontWeight: FONTS.medium,
+    color: COLORS.text.secondary,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },

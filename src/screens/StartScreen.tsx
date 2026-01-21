@@ -9,9 +9,10 @@ import { COLORS, FONTS } from '../constants/theme';
 interface StartScreenProps {
   onStart: () => void;
   onStartZen: () => void;
+  onHistory?: () => void;
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen }) => {
+export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory }) => {
   const insets = useSafeAreaInsets();
   const { isMuted, toggleMute, startBgm } = useSoundContext();
   const hasInteractedRef = useRef(false);
@@ -50,6 +51,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen })
         <View style={styles.buttonContainer}>
           <Button title="Play" onPress={onStart} />
           <Button title="Zen Mode" onPress={onStartZen} variant="secondary" />
+          {onHistory && (
+            <Button title="History" onPress={onHistory} variant="tertiary" />
+          )}
         </View>
       </View>
     </LinearGradient>

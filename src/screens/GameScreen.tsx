@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,10 +35,38 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const haptics = useHaptics();
+  const [showCorrectAnswer, setShowCorrectAnswer] = useState(false);
 
   const isCompact = width < 400;
   const backButtonSize = isCompact ? 36 : 40;
   const castleSize = isCompact ? 60 : 70;
+
+  // Reveal correct answer timing on wrong/timeout
+  useEffect(() => {
+    if (feedback === 'incorrect' || feedback === 'timeout') {
+      // Delay before showing correct answer (after shake animation)
+      const revealTimer = setTimeout(() => {
+        setShowCorrectAnswer(true);
+      }, 300);
+
+      // Hide after total display time (matches wrongAnswerDelayMs from GAME_CONFIG)
+      const hideTimer = setTimeout(() => {
+        setShowCorrectAnswer(false);
+      }, 2300); // 300ms delay + 2000ms display
+
+      return () => {
+        clearTimeout(revealTimer);
+        clearTimeout(hideTimer);
+      };
+    } else {
+      setShowCorrectAnswer(false);
+    }
+  }, [feedback]);
+
+  // Reset on new round
+  useEffect(() => {
+    setShowCorrectAnswer(false);
+  }, [roundState]);
 
   // Trigger haptics on feedback
   useEffect(() => {
@@ -120,6 +148,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               isZenMode={isZenMode}
               processingChoice={gameState.processingChoice}
               onChoice={handleColorMatchChoice}
+              showCorrectAnswer={showCorrectAnswer}
             />
           ) : (
             <ColorWheelChallenge
@@ -128,6 +157,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               processingChoice={gameState.processingChoice}
               isZenMode={isZenMode}
               onChoice={handleColorWheelChoice}
+              showCorrectAnswer={showCorrectAnswer}
             />
           )}
         </View>

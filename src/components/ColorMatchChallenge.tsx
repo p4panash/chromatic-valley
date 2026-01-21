@@ -11,6 +11,7 @@ interface ColorMatchChallengeProps {
   isZenMode: boolean;
   processingChoice: boolean;
   onChoice: (color: string) => void;
+  showCorrectAnswer?: boolean;
 }
 
 const { width } = Dimensions.get('window');
@@ -22,6 +23,7 @@ export const ColorMatchChallenge: React.FC<ColorMatchChallengeProps> = memo(({
   isZenMode,
   processingChoice,
   onChoice,
+  showCorrectAnswer = false,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -40,6 +42,8 @@ export const ColorMatchChallenge: React.FC<ColorMatchChallengeProps> = memo(({
     selectedIndex === index && feedback === 'correct';
   const isIncorrectChoice = (index: number) =>
     selectedIndex === index && feedback === 'incorrect';
+  const shouldShowAsCorrect = (index: number) =>
+    showCorrectAnswer && index === round.correctIndex && feedback !== 'correct';
 
   return (
     <View style={styles.container}>
@@ -59,6 +63,7 @@ export const ColorMatchChallenge: React.FC<ColorMatchChallengeProps> = memo(({
                 disabled={processingChoice}
                 isCorrect={isCorrectChoice(index)}
                 isIncorrect={isIncorrectChoice(index)}
+                showAsCorrectAnswer={shouldShowAsCorrect(index)}
               />
             </View>
           ))}

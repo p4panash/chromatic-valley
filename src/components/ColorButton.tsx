@@ -22,6 +22,7 @@ interface ColorButtonProps {
   disabled?: boolean;
   isCorrect?: boolean;
   isIncorrect?: boolean;
+  showAsCorrectAnswer?: boolean;
 }
 
 const ColorButtonComponent: React.FC<ColorButtonProps> = ({
@@ -31,6 +32,7 @@ const ColorButtonComponent: React.FC<ColorButtonProps> = ({
   disabled = false,
   isCorrect = false,
   isIncorrect = false,
+  showAsCorrectAnswer = false,
 }) => {
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
@@ -41,6 +43,8 @@ const ColorButtonComponent: React.FC<ColorButtonProps> = ({
   const shadowDepth = useSharedValue(1);
   const correctRingScale = useSharedValue(0);
   const incorrectOverlay = useSharedValue(0);
+  const revealRingOpacity = useSharedValue(0);
+  const revealPulseScale = useSharedValue(1);
 
   // Entrance animation with staggered delay
   useEffect(() => {
@@ -111,6 +115,40 @@ const ColorButtonComponent: React.FC<ColorButtonProps> = ({
     }
   }, [isIncorrect, shakeX, incorrectOverlay, shadowDepth]);
 
+  // Reveal correct answer animation - prominent pulsing ring with glow
+  useEffect(() => {
+    if (showAsCorrectAnswer) {
+      // Strong fade in and continuous pulse for emphasis
+      revealRingOpacity.value = withSequence(
+        withTiming(1, { duration: 150 }),
+        withTiming(0.8, { duration: 500 }),
+        withTiming(1, { duration: 500 }),
+        withTiming(0.8, { duration: 500 }),
+        withTiming(1, { duration: 500 }),
+        withTiming(0.8, { duration: 500 })
+      );
+      revealPulseScale.value = withSequence(
+        withTiming(1.12, { duration: 150 }),
+        withTiming(1.06, { duration: 500 }),
+        withTiming(1.12, { duration: 500 }),
+        withTiming(1.06, { duration: 500 }),
+        withTiming(1.12, { duration: 500 }),
+        withTiming(1.06, { duration: 500 })
+      );
+      // Show glow effect
+      glowOpacity.value = withSequence(
+        withTiming(0.6, { duration: 150 }),
+        withTiming(0.4, { duration: 500 }),
+        withTiming(0.6, { duration: 500 }),
+        withTiming(0.4, { duration: 500 }),
+        withTiming(0.6, { duration: 500 })
+      );
+    } else {
+      revealRingOpacity.value = withTiming(0, { duration: 150 });
+      revealPulseScale.value = withTiming(1, { duration: 150 });
+    }
+  }, [showAsCorrectAnswer, revealRingOpacity, revealPulseScale, glowOpacity]);
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: scale.value * pulseScale.value },
@@ -144,6 +182,11 @@ const ColorButtonComponent: React.FC<ColorButtonProps> = ({
     opacity: incorrectOverlay.value,
   }));
 
+  const revealRingStyle = useAnimatedStyle(() => ({
+    opacity: revealRingOpacity.value,
+    transform: [{ scale: revealPulseScale.value }],
+  }));
+
   const handlePressIn = useCallback(() => {
     if (!disabled) {
       scale.value = withTiming(0.92, { duration: 80 });
@@ -168,6 +211,9 @@ const ColorButtonComponent: React.FC<ColorButtonProps> = ({
     >
       {/* Success ring animation */}
       <AnimatedView style={[styles.successRing, correctRingStyle]} />
+
+      {/* Reveal correct answer ring */}
+      <AnimatedView style={[styles.revealRing, revealRingStyle]} />
 
       {/* Multi-layer shadow for depth */}
       <AnimatedView style={[styles.shadowLayerOuter, shadowAnimatedStyle]} />
@@ -220,6 +266,22 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 3,
     borderColor: COLORS.accent.sage,
+  },
+  // Reveal correct answer ring - prominent pulsing ring
+  revealRing: {
+    position: 'absolute',
+    top: -8,
+    left: -8,
+    right: -8,
+    bottom: -8,
+    borderRadius: 30,
+    borderWidth: 5,
+    borderColor: COLORS.accent.sage,
+    shadowColor: COLORS.accent.sage,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
   // Outer shadow - softer, larger
   shadowLayerOuter: {

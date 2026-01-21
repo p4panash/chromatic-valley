@@ -6,6 +6,7 @@ import { COLORS } from '../constants/theme';
 interface ColorWheelProps {
   colors: [string, string, string]; // Three segments of the wheel
   missingIndex: number; // Which segment is gray/missing (0, 1, or 2)
+  revealCorrectColor?: string; // When set, fills the missing segment with this color
 }
 
 const WHEEL_SIZE = Math.min(Dimensions.get('window').width - 80, 280);
@@ -75,7 +76,7 @@ const getSegmentCentroid = (
   return polarToCartesian(cx, cy, centroidRadius, midAngle);
 };
 
-const ColorWheelComponent: React.FC<ColorWheelProps> = ({ colors, missingIndex }) => {
+const ColorWheelComponent: React.FC<ColorWheelProps> = ({ colors, missingIndex, revealCorrectColor }) => {
   const center = WHEEL_SIZE / 2;
   const outerRadius = WHEEL_SIZE / 2 - 12;
   const innerRadius = 25; // Small center hole for elegance
@@ -117,6 +118,12 @@ const ColorWheelComponent: React.FC<ColorWheelProps> = ({ colors, missingIndex }
             <Stop offset="0%" stopColor={missingColor} stopOpacity="1" />
             <Stop offset="100%" stopColor={missingPatternColor} stopOpacity="1" />
           </RadialGradient>
+
+          {/* Reveal glow effect for correct answer */}
+          <RadialGradient id="revealGlow" cx="50%" cy="50%" r="60%">
+            <Stop offset="0%" stopColor={COLORS.accent.sage} stopOpacity="0.3" />
+            <Stop offset="100%" stopColor={COLORS.accent.sage} stopOpacity="0" />
+          </RadialGradient>
         </Defs>
 
         {/* Outer ring for polish */}
@@ -133,7 +140,12 @@ const ColorWheelComponent: React.FC<ColorWheelProps> = ({ colors, missingIndex }
         <G>
           {segments.map((segment, index) => {
             const isMissing = index === missingIndex;
-            const color = isMissing ? 'url(#missingGradient)' : colors[index];
+            const isRevealing = isMissing && revealCorrectColor;
+            const color = isRevealing
+              ? revealCorrectColor
+              : isMissing
+              ? 'url(#missingGradient)'
+              : colors[index];
 
             return (
               <G key={index}>
@@ -143,16 +155,27 @@ const ColorWheelComponent: React.FC<ColorWheelProps> = ({ colors, missingIndex }
                   fill={color}
                 />
 
-                {/* Highlight overlay for colored segments */}
-                {!isMissing && (
+                {/* Highlight overlay for colored segments (including revealed) */}
+                {(!isMissing || isRevealing) && (
                   <Path
                     d={createArcPath(center, center, outerRadius, segment.start, segment.end, innerRadius)}
                     fill="url(#segmentHighlight)"
                   />
                 )}
 
-                {/* Question mark indicator for missing segment */}
-                {isMissing && (
+                {/* Sage border for revealed segment */}
+                {isRevealing && (
+                  <Path
+                    d={createArcPath(center, center, outerRadius - 1, segment.start, segment.end, innerRadius + 1)}
+                    fill="none"
+                    stroke={COLORS.accent.sage}
+                    strokeWidth={3}
+                    strokeOpacity={0.8}
+                  />
+                )}
+
+                {/* Question mark indicator for missing segment (only when not revealing) */}
+                {isMissing && !isRevealing && (
                   <G>
                     {/* Subtle dashed border effect */}
                     <Path

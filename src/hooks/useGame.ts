@@ -293,9 +293,9 @@ export const useGame = (options: UseGameOptions = {}) => {
     const isZenMode = currentState.mode === 'zen';
     const isUnifiedMode = currentState.mode === 'unified';
 
-    // Determine challenge type for unified mode
+    // Determine challenge type for unified and zen modes (both get variety)
     let challengeType: ChallengeType = 'color-match';
-    if (isUnifiedMode) {
+    if (isUnifiedMode || isZenMode) {
       challengeType = getNextChallengeType(currentChallengeType, currentState.roundsSinceSwitch);
       if (challengeType !== currentChallengeType) {
         setCurrentChallengeType(challengeType);
@@ -307,7 +307,7 @@ export const useGame = (options: UseGameOptions = {}) => {
 
     // Generate appropriate round
     let newRound: UnifiedRoundState;
-    if (isUnifiedMode && challengeType === 'color-wheel') {
+    if ((isUnifiedMode || isZenMode) && challengeType === 'color-wheel') {
       newRound = generateColorWheelRound();
     } else {
       newRound = generateColorMatchRound(currentState.level);
@@ -361,16 +361,16 @@ export const useGame = (options: UseGameOptions = {}) => {
       if (newWrongAnswers >= GAME_CONFIG.maxWrongAnswers) {
         scheduleTimeout(() => {
           setGameState((p) => ({ ...p, isPlaying: false }));
-        }, 1000);
+        }, GAME_CONFIG.wrongAnswerDelayMs);
       } else {
-        scheduleTimeout(() => nextRoundRef.current(), 1000);
+        scheduleTimeout(() => nextRoundRef.current(), GAME_CONFIG.wrongAnswerDelayMs);
       }
 
       return newState;
     });
 
     setFeedback('timeout');
-    scheduleTimeout(() => setFeedback(null), GAME_CONFIG.feedbackDurationMs);
+    scheduleTimeout(() => setFeedback(null), GAME_CONFIG.wrongAnswerDelayMs);
   }, [stopTimer, scheduleTimeout]);
 
   // Keep handleTimeoutRef updated
@@ -458,16 +458,16 @@ export const useGame = (options: UseGameOptions = {}) => {
           if (!isZenMode && newWrongAnswers >= GAME_CONFIG.maxWrongAnswers) {
             scheduleTimeout(() => {
               setGameState((p) => ({ ...p, isPlaying: false }));
-            }, 1000);
+            }, GAME_CONFIG.wrongAnswerDelayMs);
           } else {
-            scheduleTimeout(() => nextRoundRef.current(), 1000);
+            scheduleTimeout(() => nextRoundRef.current(), GAME_CONFIG.wrongAnswerDelayMs);
           }
 
           return newState;
         });
 
         setFeedback('incorrect');
-        scheduleTimeout(() => setFeedback(null), GAME_CONFIG.feedbackDurationMs);
+        scheduleTimeout(() => setFeedback(null), GAME_CONFIG.wrongAnswerDelayMs);
       }
     },
     [stopTimer, scheduleTimeout]

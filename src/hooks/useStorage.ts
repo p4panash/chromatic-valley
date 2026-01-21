@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { TutorialMechanic } from '../types';
+import type { TutorialMechanic, GameMode } from '../types';
 
 const STORAGE_KEYS = {
   HIGH_SCORES: '@chromatic_valley:high_scores',
@@ -14,7 +14,7 @@ export interface HighScore {
   streak: number;
   accuracy: number;
   date: string;
-  mode: 'classic' | 'zen' | 'unified';
+  mode: GameMode;
 }
 
 export interface StoredData {
@@ -107,14 +107,14 @@ export const useStorage = () => {
     }
   }, [data.mechanicsSeen]);
 
-  const getHighScore = useCallback((mode?: 'classic' | 'zen' | 'unified'): number => {
+  const getHighScore = useCallback((mode?: GameMode): number => {
     const filtered = mode
       ? data.highScores.filter((s) => s.mode === mode)
       : data.highScores;
     return filtered.length > 0 ? filtered[0].score : 0;
   }, [data.highScores]);
 
-  const isNewHighScore = useCallback((score: number, mode: 'classic' | 'zen' | 'unified'): boolean => {
+  const isNewHighScore = useCallback((score: number, mode: GameMode): boolean => {
     const currentHigh = getHighScore(mode);
     return score > currentHigh;
   }, [getHighScore]);

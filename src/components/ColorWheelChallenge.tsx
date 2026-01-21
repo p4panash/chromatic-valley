@@ -13,6 +13,7 @@ interface ColorWheelChallengeProps {
   processingChoice: boolean;
   isZenMode: boolean;
   onChoice: (index: number) => void;
+  showCorrectAnswer?: boolean;
 }
 
 const { width } = Dimensions.get('window');
@@ -24,6 +25,7 @@ export const ColorWheelChallenge: React.FC<ColorWheelChallengeProps> = memo(({
   processingChoice,
   isZenMode,
   onChoice,
+  showCorrectAnswer = false,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -42,6 +44,9 @@ export const ColorWheelChallenge: React.FC<ColorWheelChallengeProps> = memo(({
     selectedIndex === index && feedback === 'correct';
   const isIncorrectChoice = (index: number) =>
     selectedIndex === index && feedback === 'incorrect';
+  const shouldShowAsCorrect = (index: number) =>
+    showCorrectAnswer && index === round.correctChoiceIndex && feedback !== 'correct';
+  const revealColor = showCorrectAnswer && feedback !== 'correct' ? round.correctColor : undefined;
 
   return (
     <View style={styles.container}>
@@ -53,6 +58,7 @@ export const ColorWheelChallenge: React.FC<ColorWheelChallengeProps> = memo(({
         <ColorWheel
           colors={round.wheelColors}
           missingIndex={round.missingIndex}
+          revealCorrectColor={revealColor}
         />
       </Animated.View>
 
@@ -68,6 +74,7 @@ export const ColorWheelChallenge: React.FC<ColorWheelChallengeProps> = memo(({
                 disabled={processingChoice}
                 isCorrect={isCorrectChoice(index)}
                 isIncorrect={isIncorrectChoice(index)}
+                showAsCorrectAnswer={shouldShowAsCorrect(index)}
               />
             </View>
           ))}

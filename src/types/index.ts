@@ -1,6 +1,6 @@
-export type GameScreen = 'start' | 'game' | 'result' | 'tutorial';
+export type GameScreen = 'start' | 'game' | 'result' | 'tutorial' | 'history';
 
-export type GameMode = 'classic' | 'zen' | 'unified';
+export type GameMode = 'zen' | 'unified';
 
 export interface ColorOption {
   hex: string;

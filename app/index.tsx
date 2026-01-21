@@ -6,7 +6,7 @@ import Animated, {
   SlideInRight,
   SlideOutLeft,
 } from 'react-native-reanimated';
-import { StartScreen, GameScreen, ResultScreen } from '../src/screens';
+import { StartScreen, GameScreen, ResultScreen, ScoreHistoryScreen } from '../src/screens';
 import { ContextualTutorial, StreakCelebration } from '../src/components';
 import { useGame, useHaptics, useStorage } from '../src/hooks';
 import { SoundProvider, useSoundContext } from '../src/contexts';
@@ -15,6 +15,7 @@ import type { GameScreen as GameScreenType, TutorialMechanic } from '../src/type
 function GameApp() {
   const [currentScreen, setCurrentScreen] = useState<GameScreenType>('start');
   const [activeTutorial, setActiveTutorial] = useState<TutorialMechanic | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const {
     gameState,
@@ -194,12 +195,38 @@ function GameApp() {
     triggeredTutorialsRef.current.clear();
   }, [haptics, playSound]);
 
-  const handleExitGame = useCallback(() => {
+  const handleExitGame = useCallback(async () => {
     haptics.triggerLight();
     playSound('tap');
+
+    // Save score to history if player has made any progress
+    if (gameState.totalAnswers > 0 && gameState.score > 0 && !scoreSavedRef.current) {
+      scoreSavedRef.current = true;
+      const accuracy = Math.round((gameState.correctAnswers / gameState.totalAnswers) * 100);
+
+      await storage.saveHighScore({
+        score: gameState.score,
+        level: gameState.level,
+        streak: gameState.maxStreak,
+        accuracy,
+        date: new Date().toISOString(),
+        mode: gameState.mode,
+      });
+    }
+
     setCurrentScreen('start');
     triggeredTutorialsRef.current.clear();
+  }, [haptics, playSound, gameState, storage]);
+
+  const handleShowHistory = useCallback(() => {
+    haptics.triggerLight();
+    playSound('tap');
+    setShowHistory(true);
   }, [haptics, playSound]);
+
+  const handleCloseHistory = useCallback(() => {
+    setShowHistory(false);
+  }, []);
 
   // Check if game has ended and save high score
   useEffect(() => {
@@ -216,7 +243,8 @@ function GameApp() {
       playSound('gameOver');
 
       const timer = setTimeout(async () => {
-        if (isNewRecord && !scoreSavedRef.current) {
+        // Always save score to history (storage keeps top 10)
+        if (gameState.score > 0 && !scoreSavedRef.current) {
           scoreSavedRef.current = true;
           const accuracy = gameState.totalAnswers > 0
             ? Math.round((gameState.correctAnswers / gameState.totalAnswers) * 100)
@@ -248,6 +276,7 @@ function GameApp() {
           <StartScreen
             onStart={handleStart}
             onStartZen={handleStartZen}
+            onHistory={handleShowHistory}
           />
         </Animated.View>
       )}
@@ -295,11 +324,20 @@ function GameApp() {
             gameState={gameState}
             onRestart={handleRestart}
             onHome={handleHome}
+            onHistory={handleShowHistory}
             isNewHighScore={isNewHighScore}
             previousHighScore={previousHighScore}
             castleProgress={castleProgress}
           />
         </Animated.View>
+      )}
+
+      {/* Score History Modal */}
+      {showHistory && (
+        <ScoreHistoryScreen
+          highScores={storage.highScores}
+          onClose={handleCloseHistory}
+        />
       )}
     </>
   );

@@ -58,6 +58,7 @@ export const GAME_CONFIG = {
   animationDelayMs: 80,
   feedbackDurationMs: 600,
   roundTransitionMs: 800,
+  wrongAnswerDelayMs: 2500, // Extra time to see correct answer reveal
   minColorDistance: 10,
   baseDifficulty: 60,
   minDifficulty: 15,

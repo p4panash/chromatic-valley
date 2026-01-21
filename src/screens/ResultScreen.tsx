@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -19,6 +19,7 @@ interface ResultScreenProps {
   gameState: GameState;
   onRestart: () => void;
   onHome?: () => void;
+  onHistory?: () => void;
   isNewHighScore?: boolean;
   previousHighScore?: number;
   castleProgress?: CastleProgress;
@@ -28,6 +29,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
   gameState,
   onRestart,
   onHome,
+  onHistory,
   isNewHighScore = false,
   previousHighScore = 0,
   castleProgress,
@@ -155,6 +157,11 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
           {onHome && (
             <Button title="Home" onPress={onHome} variant="secondary" />
           )}
+          {onHistory && (
+            <Pressable style={styles.historyLink} onPress={onHistory}>
+              <Text style={styles.historyLinkText}>View History</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </LinearGradient>
@@ -244,5 +251,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
     gap: 12,
     alignItems: 'center',
+  },
+  historyLink: {
+    marginTop: 16,
+    padding: 8,
+  },
+  historyLinkText: {
+    fontSize: 13,
+    fontWeight: FONTS.medium,
+    color: COLORS.text.secondary,
+    letterSpacing: 0.5,
+    textDecorationLine: 'underline',
   },
 });
