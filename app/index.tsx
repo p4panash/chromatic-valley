@@ -24,6 +24,7 @@ function GameApp() {
   const [showHarmonyBanner, setShowHarmonyBanner] = useState(false);
   const [harmonyToIntroduce, setHarmonyToIntroduce] = useState<typeof HARMONY_CONFIG[number] | null>(null);
   const [showHarmonyIntro, setShowHarmonyIntro] = useState(false);
+  const [appKey, setAppKey] = useState(0); // Used to force refresh after data reset
 
   const haptics = useHaptics();
   const storage = useStorage();
@@ -392,6 +393,18 @@ function GameApp() {
 
   const handleResetData = useCallback(async () => {
     await storage.clearAllData();
+    // Reset all UI state
+    setCurrentScreen('start');
+    setActiveTutorial(null);
+    setShowHistory(false);
+    setShowStats(false);
+    setShowCelebration(false);
+    setShowHarmonyBanner(false);
+    setHarmonyToIntroduce(null);
+    setShowHarmonyIntro(false);
+    triggeredTutorialsRef.current.clear();
+    // Force re-render to pick up cleared storage data
+    setAppKey(prev => prev + 1);
   }, [storage]);
 
   // Check if game has ended and save high score
