@@ -9,81 +9,24 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { COLORS, FONTS } from '../constants/theme';
-import type { TutorialMechanic } from '../types';
+import { COLORS, FONTS, HARMONY_COLORS } from '../constants/theme';
+import type { HarmonyConfig } from '../types';
 
-interface ContextualTutorialProps {
-  mechanic: TutorialMechanic;
+interface HarmonyIntroductionProps {
+  harmony: HarmonyConfig;
   onDismiss: () => void;
+  isFirstHarmony?: boolean;
 }
 
-const TUTORIAL_CONTENT: Record<TutorialMechanic, { title: string; message: string }> = {
-  'color-match': {
-    title: 'Match the Color',
-    message: 'Find the exact color shown above from the choices below',
-  },
-  triadic: {
-    title: 'Triadic Harmony',
-    message: 'Three colors equally spaced on the wheel - find the missing one!',
-  },
-  complementary: {
-    title: 'Complementary Colors',
-    message: 'Find the color directly opposite on the color wheel',
-  },
-  'split-complementary': {
-    title: 'Split Complementary',
-    message: 'One color plus two colors flanking its opposite - find the missing piece!',
-  },
-  analogous: {
-    title: 'Analogous Colors',
-    message: 'Neighboring colors on the wheel - complete the sequence!',
-  },
-  tetradic: {
-    title: 'Tetradic Square',
-    message: 'Four colors forming a square on the wheel - find the fourth!',
-  },
-  'double-complementary': {
-    title: 'Double Complementary',
-    message: 'Two pairs of opposite colors - complete the harmony!',
-  },
-  monochromatic: {
-    title: 'Monochromatic',
-    message: 'Shades and tints of one hue - find the missing shade!',
-  },
-  timer: {
-    title: 'Game Rules',
-    message: 'Answer quickly for bonus points! You have 3 lives - wrong answers cost one.',
-  },
-  streak: {
-    title: 'Build Your Streak',
-    message: 'Consecutive correct answers multiply your score!',
-  },
-  lives: {
-    title: 'Three Chances',
-    message: 'You have 3 lives - wrong answers cost one',
-  },
-  'game-rules': {
-    title: 'How to Play',
-    message: 'Answer quickly for time bonus! You have 3 lives - wrong answers or timeouts cost one.',
-  },
-  'zen-rules': {
-    title: 'Zen Mode',
-    message: "Relax and explore colors at your own pace. No timer, no lives, no pressure. Harmonies won't unlock here - play Normal mode to discover new ones.",
-  },
-  'info-overview': {
-    title: 'Your Journey',
-    message: 'Build streaks for bonus points! Your lifetime score unlocks new color harmonies to discover.',
-  },
-};
-
-const AUTO_DISMISS_MS = 5000;
+const AUTO_DISMISS_MS = 4000;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
-  mechanic,
+export const HarmonyIntroduction: React.FC<HarmonyIntroductionProps> = memo(({
+  harmony,
   onDismiss,
+  isFirstHarmony = false,
 }) => {
-  const content = TUTORIAL_CONTENT[mechanic];
+  const colors = HARMONY_COLORS[harmony.type] || HARMONY_COLORS['color-match'];
   const onDismissRef = useRef(onDismiss);
   const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -91,11 +34,13 @@ export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
   const blurOpacity = useSharedValue(0);
   const cardScale = useSharedValue(0.9);
   const cardOpacity = useSharedValue(0);
+  const swatchOpacity = useSharedValue(0);
   const titleOpacity = useSharedValue(0);
-  const messageOpacity = useSharedValue(0);
+  const descOpacity = useSharedValue(0);
   const tapOpacity = useSharedValue(0);
+  const glowOpacity = useSharedValue(0);
 
-  // Keep ref updated with latest callback
+  // Keep ref updated
   useEffect(() => {
     onDismissRef.current = onDismiss;
   }, [onDismiss]);
@@ -123,16 +68,20 @@ export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
     cardScale.value = withDelay(100, withSpring(1, { damping: 12 }));
     cardOpacity.value = withDelay(100, withTiming(1, { duration: 200 }));
 
-    // 200ms: Title fades in
-    titleOpacity.value = withDelay(200, withTiming(1, { duration: 200 }));
+    // 200ms: Harmony color swatch animates in
+    swatchOpacity.value = withDelay(200, withTiming(1, { duration: 200 }));
+    glowOpacity.value = withDelay(200, withTiming(0.4, { duration: 300 }));
 
-    // 300ms: Message fades in
-    messageOpacity.value = withDelay(300, withTiming(1, { duration: 200 }));
+    // 300ms: Title fades in
+    titleOpacity.value = withDelay(300, withTiming(1, { duration: 200 }));
 
-    // 400ms: "Tap to continue" appears
-    tapOpacity.value = withDelay(400, withTiming(1, { duration: 200 }));
+    // 400ms: Description fades in
+    descOpacity.value = withDelay(400, withTiming(1, { duration: 200 }));
 
-    // Set up auto-dismiss timer
+    // 500ms: "Tap to continue" appears
+    tapOpacity.value = withDelay(500, withTiming(1, { duration: 200 }));
+
+    // Auto-dismiss after 4s
     autoDismissTimerRef.current = setTimeout(() => {
       handleDismiss();
     }, AUTO_DISMISS_MS);
@@ -153,12 +102,20 @@ export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
     transform: [{ scale: cardScale.value }],
   }));
 
+  const swatchStyle = useAnimatedStyle(() => ({
+    opacity: swatchOpacity.value,
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
   const titleStyle = useAnimatedStyle(() => ({
     opacity: titleOpacity.value,
   }));
 
-  const messageStyle = useAnimatedStyle(() => ({
-    opacity: messageOpacity.value,
+  const descStyle = useAnimatedStyle(() => ({
+    opacity: descOpacity.value,
   }));
 
   const tapStyle = useAnimatedStyle(() => ({
@@ -174,15 +131,36 @@ export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
 
       <View style={styles.contentContainer}>
         <Animated.View style={[styles.card, cardStyle]}>
-          {/* Title */}
-          <Animated.Text style={[styles.title, titleStyle]}>
-            {content.title}
+          {/* Gentle glow ring */}
+          <Animated.View
+            style={[
+              styles.glowRing,
+              glowStyle,
+              { backgroundColor: colors.glow, shadowColor: colors.glow },
+            ]}
+          />
+
+          {/* Color swatch demo */}
+          <Animated.View style={[styles.swatchContainer, swatchStyle]}>
+            <View style={[styles.swatch, { backgroundColor: colors.base }]} />
+          </Animated.View>
+
+          {/* Harmony name */}
+          <Animated.Text style={[styles.harmonyName, titleStyle, { color: colors.base }]}>
+            {harmony.name}
           </Animated.Text>
 
-          {/* Message */}
-          <Animated.Text style={[styles.message, messageStyle]}>
-            {content.message}
+          {/* Description */}
+          <Animated.Text style={[styles.description, descStyle]}>
+            {harmony.description}
           </Animated.Text>
+
+          {/* First harmony welcome text */}
+          {isFirstHarmony && (
+            <Animated.Text style={[styles.welcomeText, descStyle]}>
+              This is your first color harmony. More unlock as you play!
+            </Animated.Text>
+          )}
 
           {/* Divider and tap to continue */}
           <Animated.View style={[styles.footer, tapStyle]}>
@@ -195,12 +173,12 @@ export const ContextualTutorial: React.FC<ContextualTutorialProps> = memo(({
   );
 });
 
-ContextualTutorial.displayName = 'ContextualTutorial';
+HarmonyIntroduction.displayName = 'HarmonyIntroduction';
 
 const styles = StyleSheet.create({
   fullScreenOverlay: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
+    zIndex: 150,
   },
   blurContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -228,22 +206,56 @@ const styles = StyleSheet.create({
     elevation: 12,
     minWidth: Math.min(SCREEN_WIDTH - 48, 320),
     maxWidth: 340,
+    overflow: 'hidden',
   },
-  title: {
-    fontSize: 22,
+  glowRing: {
+    position: 'absolute',
+    top: -30,
+    left: -30,
+    right: -30,
+    height: 100,
+    borderRadius: 50,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 30,
+  },
+  swatchContainer: {
+    marginBottom: 16,
+  },
+  swatch: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  harmonyName: {
+    fontSize: 24,
     fontWeight: FONTS.semiBold,
-    color: COLORS.text.primary,
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
-  message: {
+  description: {
     fontSize: 15,
     fontWeight: FONTS.regular,
     color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 8,
+  },
+  welcomeText: {
+    fontSize: 13,
+    fontWeight: FONTS.regular,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 12,
+    fontStyle: 'italic',
+    opacity: 0.8,
   },
   footer: {
     marginTop: 20,

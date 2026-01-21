@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { COLOR_PALETTE, GAME_CONFIG, HARMONY_CONFIG } from '../constants/theme';
+import { COLOR_PALETTE, GAME_CONFIG, HARMONY_CONFIG, getColorsForLevel, getNewlyUnlockedHarmony } from '../constants/theme';
 import {
   generateSimilarColor,
   colorDistance,
@@ -75,6 +75,8 @@ export const useGame = (options: UseGameOptions = {}) => {
   const [currentChallengeType, setCurrentChallengeType] = useState<HarmonyType>('color-match');
   const [streakMilestone, setStreakMilestone] = useState<number | null>(null);
   const [timerPendingStart, setTimerPendingStart] = useState(false);
+  const [newlyUnlockedHarmony, setNewlyUnlockedHarmony] = useState<typeof HARMONY_CONFIG[number] | null>(null);
+  const [pendingHarmonyType, setPendingHarmonyType] = useState<HarmonyType | null>(null);
 
   // Keep lifetime score in a ref for use in callbacks
   const lifetimeScoreRef = useRef(lifetimeScore);
@@ -205,9 +207,12 @@ export const useGame = (options: UseGameOptions = {}) => {
   }, []);
 
   // Generate a color match round
+  // Uses level-based color selection for progressive difficulty
   const generateColorMatchRound = useCallback((level: number): ColorMatchRound => {
-    const targetIndex = Math.floor(Math.random() * COLOR_PALETTE.length);
-    const targetColor = COLOR_PALETTE[targetIndex];
+    // Get colors appropriate for current level (easy -> medium -> hard -> hardcore)
+    const availableColors = getColorsForLevel(level);
+    const targetIndex = Math.floor(Math.random() * availableColors.length);
+    const targetColor = availableColors[targetIndex];
     const difficulty = getDifficulty(level);
     const wrongChoices = generateChoices(targetColor.hex, GAME_CONFIG.choiceCount, difficulty);
     const correctIndex = Math.floor(Math.random() * GAME_CONFIG.choiceCount);
@@ -596,12 +601,20 @@ export const useGame = (options: UseGameOptions = {}) => {
     // Determine challenge type for unified and zen modes (both get variety)
     let harmonyType: HarmonyType = 'color-match';
     if (isUnifiedMode || isZenMode) {
-      harmonyType = getNextChallengeType(currentChallengeType, currentState.roundsSinceSwitch);
-      if (harmonyType !== currentChallengeType) {
+      // Check if there's a pending harmony type (newly unlocked) that should be shown immediately
+      if (pendingHarmonyType) {
+        harmonyType = pendingHarmonyType;
+        setPendingHarmonyType(null); // Clear the pending type after using it
         setCurrentChallengeType(harmonyType);
         setGameState((prev) => ({ ...prev, roundsSinceSwitch: 0 }));
       } else {
-        setGameState((prev) => ({ ...prev, roundsSinceSwitch: prev.roundsSinceSwitch + 1 }));
+        harmonyType = getNextChallengeType(currentChallengeType, currentState.roundsSinceSwitch);
+        if (harmonyType !== currentChallengeType) {
+          setCurrentChallengeType(harmonyType);
+          setGameState((prev) => ({ ...prev, roundsSinceSwitch: 0 }));
+        } else {
+          setGameState((prev) => ({ ...prev, roundsSinceSwitch: prev.roundsSinceSwitch + 1 }));
+        }
       }
     }
 
@@ -618,7 +631,7 @@ export const useGame = (options: UseGameOptions = {}) => {
         startTimerInternal(currentState.level);
       }
     }
-  }, [currentChallengeType, generateRoundForHarmony, getNextChallengeType, startTimerInternal]);
+  }, [currentChallengeType, pendingHarmonyType, generateRoundForHarmony, getNextChallengeType, startTimerInternal]);
 
   // Start timer when tutorial becomes inactive and timer is pending
   useEffect(() => {
@@ -718,6 +731,19 @@ export const useGame = (options: UseGameOptions = {}) => {
           scheduleTimeout(() => setStreakMilestone(null), 1500);
         }
 
+        // Check if this score crosses a harmony unlock threshold
+        // Use lifetime score + current game score as the effective score
+        const previousEffectiveScore = lifetimeScoreRef.current + currentGameState.score;
+        const newEffectiveScore = lifetimeScoreRef.current + currentGameState.score + points;
+        const unlockedHarmony = getNewlyUnlockedHarmony(previousEffectiveScore, newEffectiveScore);
+
+        if (unlockedHarmony) {
+          // Queue the newly unlocked harmony to be shown next
+          setPendingHarmonyType(unlockedHarmony.type as HarmonyType);
+          setNewlyUnlockedHarmony(unlockedHarmony);
+          // App/index.tsx manages the timing via HarmonyUnlockBanner and HarmonyIntroduction
+        }
+
         // Extract the correct answer color for castle windows
         const answerColor = currentRoundState.challengeType === 'color-match'
           ? currentRoundState.targetColor.hex
@@ -775,6 +801,8 @@ export const useGame = (options: UseGameOptions = {}) => {
     setFeedback(null);
     setCurrentChallengeType('color-match');
     setStreakMilestone(null);
+    setNewlyUnlockedHarmony(null);
+    setPendingHarmonyType(null);
   }, [clearAllTimeouts, stopTimer]);
 
   const resetGame = useCallback(() => {
@@ -785,7 +813,13 @@ export const useGame = (options: UseGameOptions = {}) => {
     setFeedback(null);
     setCurrentChallengeType('color-match');
     setStreakMilestone(null);
+    setNewlyUnlockedHarmony(null);
+    setPendingHarmonyType(null);
   }, [clearAllTimeouts, stopTimer]);
+
+  const clearNewlyUnlockedHarmony = useCallback(() => {
+    setNewlyUnlockedHarmony(null);
+  }, []);
 
   // Start first round when game begins
   useEffect(() => {
@@ -814,5 +848,7 @@ export const useGame = (options: UseGameOptions = {}) => {
     castleProgress,
     streakMilestone,
     currentChallengeType,
+    newlyUnlockedHarmony,
+    clearNewlyUnlockedHarmony,
   };
 };

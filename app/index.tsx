@@ -7,8 +7,9 @@ import Animated, {
   SlideOutLeft,
 } from 'react-native-reanimated';
 import { StartScreen, GameScreen, ResultScreen, ScoreHistoryScreen } from '../src/screens';
-import { ContextualTutorial, StreakCelebration } from '../src/components';
+import { ContextualTutorial, StreakCelebration, HarmonyUnlockBanner, HarmonyIntroduction } from '../src/components';
 import { useGame, useHaptics, useStorage } from '../src/hooks';
+import { HARMONY_CONFIG } from '../src/constants/theme';
 import { SoundProvider, useSoundContext } from '../src/contexts';
 import type { GameScreen as GameScreenType, TutorialMechanic } from '../src/types';
 
@@ -16,6 +17,12 @@ function GameApp() {
   const [currentScreen, setCurrentScreen] = useState<GameScreenType>('start');
   const [activeTutorial, setActiveTutorial] = useState<TutorialMechanic | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [previousHighScore, setPreviousHighScore] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showHarmonyBanner, setShowHarmonyBanner] = useState(false);
+  const [harmonyToIntroduce, setHarmonyToIntroduce] = useState<typeof HARMONY_CONFIG[number] | null>(null);
+  const [showHarmonyIntro, setShowHarmonyIntro] = useState(false);
 
   const haptics = useHaptics();
   const storage = useStorage();
@@ -29,14 +36,12 @@ function GameApp() {
     handleChoice,
     streakMilestone,
     currentChallengeType,
+    newlyUnlockedHarmony,
+    clearNewlyUnlockedHarmony,
   } = useGame({
-    tutorialActive: activeTutorial !== null,
+    tutorialActive: activeTutorial !== null || showHarmonyIntro,
     lifetimeScore: storage.lifetimeScore,
   });
-
-  const [isNewHighScore, setIsNewHighScore] = useState(false);
-  const [previousHighScore, setPreviousHighScore] = useState(0);
-  const [showCelebration, setShowCelebration] = useState(false);
   const scoreSavedRef = useRef(false);
   const lastStreakMilestoneRef = useRef<number | null>(null);
   const triggeredTutorialsRef = useRef<Set<TutorialMechanic>>(new Set());
@@ -63,6 +68,78 @@ function GameApp() {
       playSound('streak');
     }
   }, [streakMilestone, playSound]);
+
+  // Handle harmony unlock notifications (via score threshold) - show banner + intro
+  useEffect(() => {
+    if (newlyUnlockedHarmony && !showHarmonyBanner && !showHarmonyIntro && !harmonyToIntroduce) {
+      setHarmonyToIntroduce(newlyUnlockedHarmony);
+      setShowHarmonyBanner(true);
+    }
+  }, [newlyUnlockedHarmony, showHarmonyBanner, showHarmonyIntro, harmonyToIntroduce]);
+
+  // Show intro on first encounter of any harmony type (no banner for already-unlocked harmonies)
+  // This runs after game-rules or zen-rules tutorial is dismissed
+  useEffect(() => {
+    if (
+      gameState.isPlaying &&
+      currentScreen === 'game' &&
+      !storage.isLoading &&
+      activeTutorial === null &&
+      !showHarmonyBanner &&
+      !showHarmonyIntro &&
+      !harmonyToIntroduce &&
+      roundState
+    ) {
+      // Check if game-rules (or zen-rules for zen mode) has been seen first
+      const rulesSeenKey = gameState.mode === 'zen' ? 'zen-rules' : 'game-rules';
+      if (!storage.hasSeenMechanic(rulesSeenKey)) {
+        return; // Wait for rules tutorial to be seen first
+      }
+
+      // Check if current challenge type has been seen
+      const currentChallengeType = roundState.challengeType;
+      if (!storage.hasSeenMechanic(currentChallengeType as TutorialMechanic)) {
+        // Show intro for this harmony type (no banner - it's already unlocked)
+        const harmony = HARMONY_CONFIG.find(h => h.type === currentChallengeType);
+        if (harmony) {
+          setHarmonyToIntroduce(harmony);
+          setShowHarmonyIntro(true); // Show intro directly, no banner
+        }
+      }
+    }
+  }, [
+    gameState.isPlaying,
+    gameState.mode,
+    currentScreen,
+    storage,
+    activeTutorial,
+    showHarmonyBanner,
+    showHarmonyIntro,
+    harmonyToIntroduce,
+    roundState,
+  ]);
+
+  // Show intro after banner has been visible for a moment (for newly unlocked harmonies)
+  // This is separate to avoid cleanup race conditions
+  useEffect(() => {
+    if (showHarmonyBanner && harmonyToIntroduce && !showHarmonyIntro) {
+      const introTimer = setTimeout(() => {
+        setShowHarmonyIntro(true);
+      }, 800);
+      return () => clearTimeout(introTimer);
+    }
+  }, [showHarmonyBanner, harmonyToIntroduce, showHarmonyIntro]);
+
+  const handleHarmonyIntroComplete = useCallback(() => {
+    // Hide both banner and intro together
+    setShowHarmonyBanner(false);
+    setShowHarmonyIntro(false);
+    if (harmonyToIntroduce) {
+      storage.markMechanicSeen(harmonyToIntroduce.type as TutorialMechanic);
+    }
+    setHarmonyToIntroduce(null);
+    clearNewlyUnlockedHarmony();
+  }, [harmonyToIntroduce, storage, clearNewlyUnlockedHarmony]);
 
   // Play sounds on feedback
   useEffect(() => {
@@ -106,42 +183,27 @@ function GameApp() {
 
     // Check for first encounter of mechanics - prioritize in order
     const checkAndShowTutorial = () => {
-      // Color match tutorial - first time seeing this challenge type
-      if (roundState.challengeType === 'color-match' && shouldShowTutorial('color-match')) {
-        triggerTutorial('color-match');
+      // 1. Game rules first (non-zen only)
+      if (gameState.mode !== 'zen' && shouldShowTutorial('game-rules')) {
+        triggerTutorial('game-rules');
         return;
       }
 
-      // Triadic (color wheel) tutorial - first time seeing this challenge type
-      if (roundState.challengeType === 'triadic' && shouldShowTutorial('triadic')) {
-        triggerTutorial('triadic');
+      // 1b. Zen rules first (zen only)
+      if (gameState.mode === 'zen' && shouldShowTutorial('zen-rules')) {
+        triggerTutorial('zen-rules');
         return;
       }
 
-      // Show tutorials for other newly unlocked harmony types
-      const harmonyTypes = ['complementary', 'split-complementary', 'analogous', 'tetradic', 'double-complementary', 'monochromatic'] as const;
-      for (const harmony of harmonyTypes) {
-        if (roundState.challengeType === harmony && shouldShowTutorial(harmony)) {
-          triggerTutorial(harmony);
-          return;
-        }
-      }
-
-      // Game Rules tutorial (timer + lives combined) - show on first game after seeing color-match (non-zen)
-      if (
-        gameState.mode !== 'zen' &&
-        storage.hasSeenMechanic('color-match') &&
-        shouldShowTutorial('timer')
-      ) {
-        triggerTutorial('timer');
+      // 2. Info overview after first correct (non-zen only)
+      if (gameState.mode !== 'zen' && gameState.correctAnswers === 1 && shouldShowTutorial('info-overview')) {
+        triggerTutorial('info-overview');
         return;
       }
 
-      // Streak tutorial (includes castle info) - show after first correct answer
-      if (gameState.streak === 1 && shouldShowTutorial('streak')) {
-        triggerTutorial('streak');
-        return;
-      }
+      // Harmony introductions are handled separately via HarmonyUnlockBanner/HarmonyIntroduction
+      // The legacy harmony tutorials (color-match, triadic, etc.) are no longer triggered here
+      // They are now shown through the new harmony unlock flow
     };
 
     // Show tutorial immediately when round is ready
@@ -150,7 +212,7 @@ function GameApp() {
     activeTutorial,
     gameState.isPlaying,
     gameState.mode,
-    gameState.streak,
+    gameState.correctAnswers,
     roundState,
     currentScreen,
     storage,
@@ -158,17 +220,28 @@ function GameApp() {
 
   const handleDismissTutorial = useCallback(() => {
     if (activeTutorial) {
+      const wasRulesTutorial = activeTutorial === 'game-rules' || activeTutorial === 'zen-rules';
+
       storage.markMechanicSeen(activeTutorial);
       // Mark related mechanics as seen for consolidated tutorials
-      if (activeTutorial === 'timer') {
+      if (activeTutorial === 'timer' || activeTutorial === 'game-rules') {
         storage.markMechanicSeen('lives');
       }
-      if (activeTutorial === 'streak') {
-        storage.markMechanicSeen('castle-building');
-      }
       setActiveTutorial(null);
+
+      // After dismissing rules tutorial, show first harmony intro if not seen
+      if (wasRulesTutorial && roundState && !storage.hasSeenMechanic(roundState.challengeType as TutorialMechanic)) {
+        const harmony = HARMONY_CONFIG.find(h => h.type === roundState.challengeType);
+        if (harmony) {
+          // Small delay to let the tutorial animation finish
+          setTimeout(() => {
+            setHarmonyToIntroduce(harmony);
+            setShowHarmonyIntro(true);
+          }, 300);
+        }
+      }
     }
-  }, [activeTutorial, storage]);
+  }, [activeTutorial, storage, roundState]);
 
   const handleStart = useCallback(() => {
     haptics.triggerMedium();
@@ -327,6 +400,22 @@ function GameApp() {
             <StreakCelebration
               streak={streakMilestone}
               onComplete={handleCelebrationComplete}
+            />
+          )}
+
+          {/* Harmony Unlock Banner */}
+          {showHarmonyBanner && harmonyToIntroduce && (
+            <HarmonyUnlockBanner
+              harmony={harmonyToIntroduce}
+            />
+          )}
+
+          {/* Harmony Introduction Modal */}
+          {showHarmonyIntro && harmonyToIntroduce && (
+            <HarmonyIntroduction
+              harmony={harmonyToIntroduce}
+              onDismiss={handleHarmonyIntroComplete}
+              isFirstHarmony={harmonyToIntroduce.type === 'color-match'}
             />
           )}
         </Animated.View>

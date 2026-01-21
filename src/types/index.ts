@@ -151,7 +151,6 @@ export type UnifiedRoundState =
 // Tutorial mechanic tracking
 export type TutorialMechanic =
   | 'color-match'
-  | 'color-wheel'
   | 'triadic'
   | 'complementary'
   | 'split-complementary'
@@ -162,7 +161,9 @@ export type TutorialMechanic =
   | 'timer'
   | 'streak'
   | 'lives'
-  | 'castle-building';
+  | 'game-rules'
+  | 'zen-rules'
+  | 'info-overview';
 
 // Castle progress stages
 export type CastleStage = 'foundation' | 'walls' | 'tower' | 'details' | 'crown';
