@@ -726,7 +726,8 @@ export const useGame = (options: UseGameOptions = {}) => {
         const points = basePoints + streakBonus + timeBonus + levelBonus;
 
         // Check for streak milestone
-        if (STREAK_MILESTONES.includes(newStreak)) {
+        const isStreakMilestone = STREAK_MILESTONES.includes(newStreak);
+        if (isStreakMilestone) {
           setStreakMilestone(newStreak);
           scheduleTimeout(() => setStreakMilestone(null), 1500);
         }
@@ -760,8 +761,11 @@ export const useGame = (options: UseGameOptions = {}) => {
           answerColors: [...prev.answerColors, answerColor].slice(-10), // Keep last 10 colors
         }));
 
-        setFeedback('correct');
-        scheduleTimeout(() => setFeedback(null), GAME_CONFIG.feedbackDurationMs);
+        // Don't show Perfect feedback when streak celebration will show
+        if (!isStreakMilestone) {
+          setFeedback('correct');
+          scheduleTimeout(() => setFeedback(null), GAME_CONFIG.feedbackDurationMs);
+        }
         scheduleTimeout(() => nextRoundRef.current(), GAME_CONFIG.roundTransitionMs);
       } else {
         const isZenMode = currentGameState.mode === 'zen';

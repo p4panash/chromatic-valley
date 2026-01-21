@@ -61,12 +61,16 @@ function GameApp() {
     startBgm();
   }, [startBgm]);
 
-  // Handle streak celebrations
+  // Handle streak celebrations with delay to match feedback timing
   useEffect(() => {
     if (streakMilestone && streakMilestone !== lastStreakMilestoneRef.current) {
       lastStreakMilestoneRef.current = streakMilestone;
-      setShowCelebration(true);
-      playSound('streak');
+      // Add delay before showing celebration (same timing as Perfect banner)
+      const timer = setTimeout(() => {
+        setShowCelebration(true);
+        playSound('streak');
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [streakMilestone, playSound]);
 
@@ -386,6 +390,10 @@ function GameApp() {
     setShowStats(false);
   }, []);
 
+  const handleResetData = useCallback(async () => {
+    await storage.clearAllData();
+  }, [storage]);
+
   // Check if game has ended and save high score
   useEffect(() => {
     if (!gameState.isPlaying && gameState.totalAnswers > 0 && currentScreen === 'game') {
@@ -442,6 +450,7 @@ function GameApp() {
             onHistory={handleShowHistory}
             onStats={handleShowStats}
             lifetimeScore={storage.lifetimeScore}
+            onResetData={handleResetData}
           />
         </Animated.View>
       )}

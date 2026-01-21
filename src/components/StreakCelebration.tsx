@@ -431,8 +431,8 @@ export const StreakCelebration: React.FC<StreakCelebrationProps> = memo(({
           </View>
         </Animated.View>
 
-        {/* Celebration text */}
-        <Animated.View style={[styles.textContainer, textStyle]}>
+        {/* Celebration text with badge background */}
+        <Animated.View style={[styles.textBadge, textStyle]}>
           <Text style={styles.streakText}>{streak} Streak!</Text>
           <Text style={styles.messageText}>{message}</Text>
         </Animated.View>
@@ -512,20 +512,30 @@ const styles = StyleSheet.create({
     width: 35,
     height: 18,
   },
-  textContainer: {
+  textBadge: {
     marginTop: 16,
     alignItems: 'center',
+    backgroundColor: COLORS.accent.sage,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   streakText: {
     fontSize: 24,
     fontWeight: FONTS.semiBold,
-    color: COLORS.text.primary,
+    color: COLORS.white,
     marginBottom: 4,
   },
   messageText: {
     fontSize: 18,
     fontWeight: FONTS.medium,
-    color: COLORS.accent.coral,
+    color: COLORS.white,
+    opacity: 0.9,
   },
   // Star styles
   star: {
