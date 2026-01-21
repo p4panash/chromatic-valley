@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, BackgroundShapes, SoundIcon, HarmonyPalette } from '../components';
@@ -56,7 +56,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
   return (
     <LinearGradient
       colors={[backgroundColors.start, backgroundColors.end]}
-      style={[styles.container, { backgroundColor: backgroundColors.end }]}
+      style={styles.container}
     >
       <BackgroundShapes unlockedColors={unlockedColors} />
 
@@ -71,7 +71,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
         </View>
       </TouchableOpacity>
 
-      <View style={[styles.content, { paddingTop: insets.top + topPadding }]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + topPadding, paddingBottom: insets.bottom + 20 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Chromatic Valley</Text>
         <Text style={styles.subtitle}>A journey through colors</Text>
 
@@ -93,7 +100,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
 
         {/* Dev tools */}
         {(onResetData || onSetLifetimeScore) && (
-          <View style={[styles.devTools, { paddingBottom: insets.bottom + 10 }]}>
+          <View style={styles.devTools}>
             {onSetLifetimeScore && (
               <View style={styles.scoreButtons}>
                 <Text style={styles.devLabel}>Set Score:</Text>
@@ -123,7 +130,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
             )}
           </View>
         )}
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 };
@@ -132,10 +139,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
     paddingHorizontal: 20,
   },
   soundButton: {
