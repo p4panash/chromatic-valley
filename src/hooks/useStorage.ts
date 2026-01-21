@@ -7,7 +7,11 @@ const STORAGE_KEYS = {
   HAS_SEEN_TUTORIAL: '@chromatic_valley:has_seen_tutorial',
   MECHANICS_SEEN: '@chromatic_valley:mechanics_seen',
   LIFETIME_SCORE: '@chromatic_valley:lifetime_score',
+  DISCOVERED_COLORS: '@chromatic_valley:discovered_colors',
 } as const;
+
+// Maximum colors to store per harmony type
+const MAX_COLORS_PER_HARMONY = 12;
 
 export interface HighScore {
   score: number;
@@ -18,11 +22,15 @@ export interface HighScore {
   mode: GameMode;
 }
 
+// Colors discovered during gameplay, organized by harmony type
+export type DiscoveredColors = Record<string, string[]>;
+
 export interface StoredData {
   highScores: HighScore[];
   hasSeenTutorial: boolean;
   mechanicsSeen: TutorialMechanic[];
   lifetimeScore: number;
+  discoveredColors: DiscoveredColors;
 }
 
 const DEFAULT_DATA: StoredData = {
@@ -30,6 +38,7 @@ const DEFAULT_DATA: StoredData = {
   hasSeenTutorial: false,
   mechanicsSeen: [],
   lifetimeScore: 0,
+  discoveredColors: {},
 };
 
 export const useStorage = () => {
@@ -40,11 +49,12 @@ export const useStorage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [scoresJson, tutorialSeen, mechanicsJson, lifetimeScoreStr] = await Promise.all([
+        const [scoresJson, tutorialSeen, mechanicsJson, lifetimeScoreStr, colorsJson] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.HIGH_SCORES),
           AsyncStorage.getItem(STORAGE_KEYS.HAS_SEEN_TUTORIAL),
           AsyncStorage.getItem(STORAGE_KEYS.MECHANICS_SEEN),
           AsyncStorage.getItem(STORAGE_KEYS.LIFETIME_SCORE),
+          AsyncStorage.getItem(STORAGE_KEYS.DISCOVERED_COLORS),
         ]);
 
         setData({
@@ -52,6 +62,7 @@ export const useStorage = () => {
           hasSeenTutorial: tutorialSeen === 'true',
           mechanicsSeen: mechanicsJson ? JSON.parse(mechanicsJson) : [],
           lifetimeScore: lifetimeScoreStr ? parseInt(lifetimeScoreStr, 10) : 0,
+          discoveredColors: colorsJson ? JSON.parse(colorsJson) : {},
         });
       } catch (error) {
         console.warn('Failed to load storage data:', error);
@@ -140,6 +151,29 @@ export const useStorage = () => {
     }
   }, [data.lifetimeScore]);
 
+  // Add discovered colors from gameplay (organized by harmony type)
+  const addDiscoveredColors = useCallback(async (harmonyType: string, colors: string[]) => {
+    try {
+      const currentColors = data.discoveredColors[harmonyType] || [];
+      // Add new unique colors, keeping only the most recent MAX_COLORS_PER_HARMONY
+      const newColors = [...new Set([...currentColors, ...colors])]
+        .slice(-MAX_COLORS_PER_HARMONY);
+
+      const updatedDiscoveredColors = {
+        ...data.discoveredColors,
+        [harmonyType]: newColors,
+      };
+
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.DISCOVERED_COLORS,
+        JSON.stringify(updatedDiscoveredColors)
+      );
+      setData((prev) => ({ ...prev, discoveredColors: updatedDiscoveredColors }));
+    } catch (error) {
+      console.warn('Failed to save discovered colors:', error);
+    }
+  }, [data.discoveredColors]);
+
   const clearAllData = useCallback(async () => {
     try {
       await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
@@ -171,6 +205,7 @@ export const useStorage = () => {
     hasSeenTutorial: data.hasSeenTutorial,
     mechanicsSeen: data.mechanicsSeen,
     lifetimeScore: data.lifetimeScore,
+    discoveredColors: data.discoveredColors,
     isLoading,
     saveHighScore,
     markTutorialSeen,
@@ -179,6 +214,7 @@ export const useStorage = () => {
     getHighScore,
     isNewHighScore,
     addToLifetimeScore,
+    addDiscoveredColors,
     clearAllData,
     resetTutorials,
   };

@@ -160,6 +160,68 @@ function GameApp() {
     prevLevelRef.current = gameState.level;
   }, [gameState.level, gameState.isPlaying, playSound]);
 
+  // Track discovered colors from gameplay
+  const lastRoundIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!roundState || !gameState.isPlaying || gameState.mode === 'zen') return;
+
+    // Create a unique ID for this round to avoid duplicate saves
+    const roundId = `${roundState.challengeType}-${JSON.stringify(roundState.choices)}`;
+    if (roundId === lastRoundIdRef.current) return;
+    lastRoundIdRef.current = roundId;
+
+    // Extract colors based on challenge type
+    const colorsToSave: string[] = [];
+    const challengeType = roundState.challengeType;
+
+    switch (challengeType) {
+      case 'color-match':
+        if ('targetColor' in roundState) {
+          colorsToSave.push(roundState.targetColor.hex);
+        }
+        break;
+      case 'triadic':
+        if ('wheelColors' in roundState) {
+          colorsToSave.push(...roundState.wheelColors);
+        }
+        break;
+      case 'complementary':
+        if ('baseColor' in roundState && 'correctColor' in roundState) {
+          colorsToSave.push(roundState.baseColor, roundState.correctColor);
+        }
+        break;
+      case 'split-complementary':
+        if ('baseColor' in roundState && 'visibleSplitColor' in roundState && 'correctColor' in roundState) {
+          colorsToSave.push(roundState.baseColor, roundState.visibleSplitColor, roundState.correctColor);
+        }
+        break;
+      case 'analogous':
+        if ('visibleColors' in roundState && 'correctColor' in roundState) {
+          colorsToSave.push(...roundState.visibleColors, roundState.correctColor);
+        }
+        break;
+      case 'tetradic':
+        if ('wheelColors' in roundState) {
+          colorsToSave.push(...roundState.wheelColors);
+        }
+        break;
+      case 'double-complementary':
+        if ('visibleColors' in roundState && 'correctColor' in roundState) {
+          colorsToSave.push(...roundState.visibleColors, roundState.correctColor);
+        }
+        break;
+      case 'monochromatic':
+        if ('visibleShades' in roundState && 'correctColor' in roundState) {
+          colorsToSave.push(...roundState.visibleShades, roundState.correctColor);
+        }
+        break;
+    }
+
+    if (colorsToSave.length > 0) {
+      storage.addDiscoveredColors(challengeType, colorsToSave);
+    }
+  }, [roundState, gameState.isPlaying, gameState.mode, storage]);
+
   const handleCelebrationComplete = useCallback(() => {
     setShowCelebration(false);
     lastStreakMilestoneRef.current = null;
@@ -465,6 +527,7 @@ function GameApp() {
         <StatsScreen
           onClose={handleCloseStats}
           lifetimeScore={storage.lifetimeScore}
+          discoveredColors={storage.discoveredColors}
         />
       )}
     </>
