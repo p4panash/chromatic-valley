@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, BackgroundShapes, SoundIcon, HarmonyPalette } from '../components';
@@ -21,8 +21,14 @@ const TEST_SCORES = [0, 500, 2000, 5000, 8000, 12000, 20000];
 
 export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory, onStats, lifetimeScore = 0, onResetData, onSetLifetimeScore }) => {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const { isMuted, toggleMute, startBgm } = useSoundContext();
   const hasInteractedRef = useRef(false);
+
+  // Responsive spacing based on screen height
+  const isSmallScreen = height < 750;
+  const topPadding = isSmallScreen ? 60 : 100;
+  const buttonTopMargin = isSmallScreen ? 40 : 80;
 
   // Calculate unlocked harmonies for evolving background
   const unlockedCount = useMemo(() => {
@@ -65,14 +71,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
         </View>
       </TouchableOpacity>
 
-      <View style={[styles.content, { paddingTop: insets.top + 100 }]}>
+      <View style={[styles.content, { paddingTop: insets.top + topPadding }]}>
         <Text style={styles.title}>Chromatic Valley</Text>
         <Text style={styles.subtitle}>A journey through colors</Text>
 
         {/* Harmony palette - visual representation of unlocked harmonies */}
         <HarmonyPalette lifetimeScore={lifetimeScore} />
 
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { marginTop: buttonTopMargin }]}>
           <Button title="Play" onPress={onStart} />
           <Button title="Zen Mode" onPress={onStartZen} variant="zen" />
           <View style={styles.secondaryButtons}>
@@ -169,7 +175,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonContainer: {
-    marginTop: 80,
     gap: 16,
     alignItems: 'center',
   },
