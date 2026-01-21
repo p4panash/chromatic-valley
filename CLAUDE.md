@@ -96,6 +96,11 @@ User Prompt → Game Designer → Project Analyst → Development → Code Revie
 - Logs decisions, blockers, and changes
 - Maintains project documentation
 
+**Key Pages:**
+
+- **Projects** — Task database for tracking work
+- **[Game Mechanics](https://www.notion.so/2eeb0e104a7081ff8947c128a9f24cfd)** — Reference doc for game mechanics. Update when mechanics change (modes, challenges, scoring, tutorials, progression).
+
 **Status Flow:**
 
 - User prompt received → Task created / In Progress
@@ -103,7 +108,7 @@ User Prompt → Game Designer → Project Analyst → Development → Code Revie
 - Code review passed → Ready for QA (user)
 - User approves → Done
 
-**When to invoke:** At every state change throughout the workflow.
+**When to invoke:** At every state change throughout the workflow. Also update Game Mechanics page when relevant changes are made.
 
 ---
 
