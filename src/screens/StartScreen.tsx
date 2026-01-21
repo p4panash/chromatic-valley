@@ -65,7 +65,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
         </View>
       </TouchableOpacity>
 
-      <View style={[styles.content, { paddingTop: insets.top + 80 }]}>
+      <View style={[styles.content, { paddingTop: insets.top + 100 }]}>
         <Text style={styles.title}>Chromatic Valley</Text>
         <Text style={styles.subtitle}>A journey through colors</Text>
 
