@@ -17,19 +17,22 @@ function GameApp() {
   const [activeTutorial, setActiveTutorial] = useState<TutorialMechanic | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
+  const haptics = useHaptics();
+  const storage = useStorage();
+  const { playSound, startBgm } = useSoundContext();
+
   const {
     gameState,
     roundState,
     feedback,
     startGame,
     handleChoice,
-    castleProgress,
     streakMilestone,
     currentChallengeType,
-  } = useGame({ tutorialActive: activeTutorial !== null });
-  const haptics = useHaptics();
-  const storage = useStorage();
-  const { playSound, startBgm } = useSoundContext();
+  } = useGame({
+    tutorialActive: activeTutorial !== null,
+    lifetimeScore: storage.lifetimeScore,
+  });
 
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [previousHighScore, setPreviousHighScore] = useState(0);
@@ -109,10 +112,19 @@ function GameApp() {
         return;
       }
 
-      // Color wheel tutorial - first time seeing this challenge type
-      if (roundState.challengeType === 'color-wheel' && shouldShowTutorial('color-wheel')) {
-        triggerTutorial('color-wheel');
+      // Triadic (color wheel) tutorial - first time seeing this challenge type
+      if (roundState.challengeType === 'triadic' && shouldShowTutorial('triadic')) {
+        triggerTutorial('triadic');
         return;
+      }
+
+      // Show tutorials for other newly unlocked harmony types
+      const harmonyTypes = ['complementary', 'split-complementary', 'analogous', 'tetradic', 'double-complementary', 'monochromatic'] as const;
+      for (const harmony of harmonyTypes) {
+        if (roundState.challengeType === harmony && shouldShowTutorial(harmony)) {
+          triggerTutorial(harmony);
+          return;
+        }
       }
 
       // Game Rules tutorial (timer + lives combined) - show on first game after seeing color-match (non-zen)
@@ -258,6 +270,11 @@ function GameApp() {
             date: new Date().toISOString(),
             mode,
           });
+
+          // Add to lifetime score only in Play mode (not Zen)
+          if (mode === 'unified') {
+            await storage.addToLifetimeScore(gameState.score);
+          }
         }
         setCurrentScreen('result');
       }, 500);
@@ -277,6 +294,7 @@ function GameApp() {
             onStart={handleStart}
             onStartZen={handleStartZen}
             onHistory={handleShowHistory}
+            lifetimeScore={storage.lifetimeScore}
           />
         </Animated.View>
       )}
@@ -291,9 +309,9 @@ function GameApp() {
             gameState={gameState}
             roundState={roundState}
             feedback={feedback}
-            castleProgress={castleProgress}
             onChoice={handleChoice}
             onExit={handleExitGame}
+            lifetimeScore={storage.lifetimeScore}
           />
 
           {/* Contextual Tutorial Overlay */}
@@ -327,7 +345,7 @@ function GameApp() {
             onHistory={handleShowHistory}
             isNewHighScore={isNewHighScore}
             previousHighScore={previousHighScore}
-            castleProgress={castleProgress}
+            lifetimeScore={storage.lifetimeScore}
           />
         </Animated.View>
       )}
@@ -337,6 +355,7 @@ function GameApp() {
         <ScoreHistoryScreen
           highScores={storage.highScores}
           onClose={handleCloseHistory}
+          lifetimeScore={storage.lifetimeScore}
         />
       )}
     </>

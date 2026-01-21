@@ -28,6 +28,41 @@ const TUTORIAL_CONTENT: Record<TutorialMechanic, { title: string; message: strin
     message: 'Find the missing color to complete the triadic harmony',
     position: 'center',
   },
+  triadic: {
+    title: 'Triadic Harmony',
+    message: 'Three colors equally spaced on the wheel - find the missing one!',
+    position: 'center',
+  },
+  complementary: {
+    title: 'Complementary Colors',
+    message: 'Find the color directly opposite on the color wheel',
+    position: 'center',
+  },
+  'split-complementary': {
+    title: 'Split Complementary',
+    message: 'One color plus two colors flanking its opposite - find the missing piece!',
+    position: 'center',
+  },
+  analogous: {
+    title: 'Analogous Colors',
+    message: 'Neighboring colors on the wheel - complete the sequence!',
+    position: 'center',
+  },
+  tetradic: {
+    title: 'Tetradic Square',
+    message: 'Four colors forming a square on the wheel - find the fourth!',
+    position: 'center',
+  },
+  'double-complementary': {
+    title: 'Double Complementary',
+    message: 'Two pairs of opposite colors - complete the harmony!',
+    position: 'center',
+  },
+  monochromatic: {
+    title: 'Monochromatic',
+    message: 'Shades and tints of one hue - find the missing shade!',
+    position: 'center',
+  },
   timer: {
     title: 'Game Rules',
     message: 'Answer quickly for bonus points! You have 3 lives - wrong answers cost one.',

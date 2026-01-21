@@ -11,6 +11,8 @@ export { TutorialOverlay } from './TutorialOverlay';
 export { ColorWheel } from './ColorWheel';
 export { ColorMatchChallenge } from './ColorMatchChallenge';
 export { ColorWheelChallenge } from './ColorWheelChallenge';
+export { HarmonyChallenge } from './HarmonyChallenge';
+export { HarmonyPalette } from './HarmonyPalette';
 export { ProgressiveCastle } from './ProgressiveCastle';
 export { MiniCastle } from './MiniCastle';
 export { ContextualTutorial } from './ContextualTutorial';

@@ -1,4 +1,4 @@
-import React, { useEffect, memo } from 'react';
+import React, { useEffect, memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -15,6 +15,7 @@ import type { FeedbackType } from '../types';
 
 interface FeedbackProps {
   type: FeedbackType;
+  unlockedColors?: string[];
 }
 
 const FEEDBACK_TEXT = {
@@ -26,20 +27,22 @@ const FEEDBACK_TEXT = {
 const PARTICLE_COUNT = 12;
 const SPARKLE_COUNT = 6;
 
-// Particle colors for correct feedback
-const CORRECT_PARTICLE_COLORS = [
+// Default particle colors when no unlocked colors provided
+const DEFAULT_PARTICLE_COLORS = [
   COLORS.accent.sage,
   COLORS.accent.sky,
   COLORS.accent.gold,
   COLORS.white,
 ];
 
-// Particle for correct answer celebration
-interface SuccessParticleProps {
+// Particle for feedback celebration
+interface FeedbackParticleProps {
   index: number;
+  colors: string[];
+  isCorrect: boolean;
 }
 
-const SuccessParticle: React.FC<SuccessParticleProps> = memo(({ index }) => {
+const FeedbackParticle: React.FC<FeedbackParticleProps> = memo(({ index, colors, isCorrect }) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const scale = useSharedValue(0);
@@ -47,33 +50,34 @@ const SuccessParticle: React.FC<SuccessParticleProps> = memo(({ index }) => {
   const rotation = useSharedValue(0);
 
   const angle = (index / PARTICLE_COUNT) * Math.PI * 2;
-  const distance = 60 + Math.random() * 40;
+  const distance = isCorrect ? 60 + Math.random() * 40 : 40 + Math.random() * 30;
   const endX = Math.cos(angle) * distance;
   const endY = Math.sin(angle) * distance;
-  const color = CORRECT_PARTICLE_COLORS[index % CORRECT_PARTICLE_COLORS.length];
-  const size = 6 + Math.random() * 6;
+  const color = colors[index % colors.length];
+  const size = isCorrect ? 6 + Math.random() * 6 : 4 + Math.random() * 4;
 
   useEffect(() => {
     const delay = index * 15;
+    const duration = isCorrect ? 500 : 400;
 
-    scale.value = withDelay(delay, withSpring(1, { damping: 6 }));
+    scale.value = withDelay(delay, withSpring(1, { damping: isCorrect ? 6 : 8 }));
     translateX.value = withDelay(
       delay,
-      withTiming(endX, { duration: 500, easing: Easing.out(Easing.cubic) })
+      withTiming(endX, { duration, easing: Easing.out(Easing.cubic) })
     );
     translateY.value = withDelay(
       delay,
-      withTiming(endY, { duration: 500, easing: Easing.out(Easing.cubic) })
+      withTiming(endY, { duration, easing: Easing.out(Easing.cubic) })
     );
     rotation.value = withDelay(
       delay,
-      withTiming(360, { duration: 600 })
+      withTiming(isCorrect ? 360 : 180, { duration: duration + 100 })
     );
     opacity.value = withDelay(
-      delay + 300,
+      delay + (isCorrect ? 300 : 200),
       withTiming(0, { duration: 200 })
     );
-  }, []);
+  }, [isCorrect]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -88,7 +92,7 @@ const SuccessParticle: React.FC<SuccessParticleProps> = memo(({ index }) => {
   return (
     <Animated.View
       style={[
-        styles.successParticle,
+        styles.feedbackParticle,
         {
           backgroundColor: color,
           width: size,
@@ -101,7 +105,7 @@ const SuccessParticle: React.FC<SuccessParticleProps> = memo(({ index }) => {
   );
 });
 
-SuccessParticle.displayName = 'SuccessParticle';
+FeedbackParticle.displayName = 'FeedbackParticle';
 
 // Sparkle for correct answer
 interface SparkleProps {
@@ -197,12 +201,20 @@ const PulseRing: React.FC<PulseRingProps> = memo(({ color, delay }) => {
 
 PulseRing.displayName = 'PulseRing';
 
-export const Feedback: React.FC<FeedbackProps> = ({ type }) => {
+export const Feedback: React.FC<FeedbackProps> = ({ type, unlockedColors }) => {
   const scale = useSharedValue(0.5);
   const opacity = useSharedValue(0);
   const shakeX = useSharedValue(0);
   const glowOpacity = useSharedValue(0);
   const badgeRotation = useSharedValue(0);
+
+  // Use unlocked colors if provided, with white added for sparkle
+  const particleColors = useMemo(() => {
+    if (unlockedColors && unlockedColors.length > 0) {
+      return [...unlockedColors, COLORS.white];
+    }
+    return DEFAULT_PARTICLE_COLORS;
+  }, [unlockedColors]);
 
   useEffect(() => {
     if (type) {
@@ -287,13 +299,18 @@ export const Feedback: React.FC<FeedbackProps> = ({ type }) => {
         <PulseRing color={bgColor} delay={0} />
         <PulseRing color={bgColor} delay={100} />
 
-        {/* Success particles for correct answer */}
-        {type === 'correct' && (
+        {/* Particles for correct and incorrect feedback */}
+        {(type === 'correct' || type === 'incorrect') && (
           <View style={styles.particleContainer}>
             {Array.from({ length: PARTICLE_COUNT }).map((_, index) => (
-              <SuccessParticle key={`particle-${index}`} index={index} />
+              <FeedbackParticle
+                key={`particle-${index}`}
+                index={index}
+                colors={particleColors}
+                isCorrect={type === 'correct'}
+              />
             ))}
-            {Array.from({ length: SPARKLE_COUNT }).map((_, index) => (
+            {type === 'correct' && Array.from({ length: SPARKLE_COUNT }).map((_, index) => (
               <FeedbackSparkle key={`sparkle-${index}`} index={index} />
             ))}
           </View>
@@ -341,7 +358,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  successParticle: {
+  feedbackParticle: {
     position: 'absolute',
   },
   sparkle: {

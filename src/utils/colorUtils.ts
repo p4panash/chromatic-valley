@@ -147,3 +147,312 @@ export const generateRandomVibrantColor = (): string => {
   const l = 45 + Math.random() * 15; // 45-60% lightness
   return hslToHex(h, s, l);
 };
+
+/**
+ * Get analogous colors (30 degrees apart on each side)
+ */
+export const getAnalogousColors = (hex: string, spacing: number = 30): [string, string] => {
+  const hsl = hexToHSL(hex);
+  const h1 = (hsl.h + spacing + 360) % 360;
+  const h2 = (hsl.h - spacing + 360) % 360;
+  return [hslToHex(h1, hsl.s, hsl.l), hslToHex(h2, hsl.s, hsl.l)];
+};
+
+/**
+ * Get tetradic/square colors (90 degrees apart)
+ */
+export const getTetradicColors = (hex: string): [string, string, string] => {
+  const hsl = hexToHSL(hex);
+  const h1 = (hsl.h + 90) % 360;
+  const h2 = (hsl.h + 180) % 360;
+  const h3 = (hsl.h + 270) % 360;
+  return [
+    hslToHex(h1, hsl.s, hsl.l),
+    hslToHex(h2, hsl.s, hsl.l),
+    hslToHex(h3, hsl.s, hsl.l),
+  ];
+};
+
+/**
+ * Get double complementary colors (two adjacent + their complements)
+ * Returns [adjacent, complement1, complement2] (base color is implicit)
+ */
+export const getDoubleComplementaryColors = (hex: string): [string, string, string] => {
+  const hsl = hexToHSL(hex);
+  const adjacentH = (hsl.h + 30) % 360;
+  const complement1H = (hsl.h + 180) % 360;
+  const complement2H = (adjacentH + 180) % 360;
+  return [
+    hslToHex(adjacentH, hsl.s, hsl.l),
+    hslToHex(complement1H, hsl.s, hsl.l),
+    hslToHex(complement2H, hsl.s, hsl.l),
+  ];
+};
+
+/**
+ * Get monochromatic colors (same hue, different saturation/lightness)
+ */
+export const getMonochromaticColors = (hex: string): [string, string] => {
+  const hsl = hexToHSL(hex);
+  // Create lighter and darker variants
+  const lighterL = Math.min(85, hsl.l + 20);
+  const darkerL = Math.max(25, hsl.l - 20);
+  const lighterS = Math.max(30, hsl.s - 15);
+  const darkerS = Math.min(100, hsl.s + 10);
+  return [
+    hslToHex(hsl.h, lighterS, lighterL),
+    hslToHex(hsl.h, darkerS, darkerL),
+  ];
+};
+
+/**
+ * Generate a vibrant color from a specific hue zone
+ * Zones divide the 360-degree hue wheel into equal segments
+ */
+export const generateColorFromZone = (zone: number, numZones: number = 6): string => {
+  const zoneSize = 360 / numZones;
+  const zoneStart = zone * zoneSize;
+  const h = zoneStart + Math.random() * zoneSize;
+  const s = 60 + Math.random() * 30; // 60-90% saturation
+  const l = 45 + Math.random() * 15; // 45-60% lightness
+  return hslToHex(h, s, l);
+};
+
+/**
+ * Get the hue zone for a given color
+ */
+export const getHueZone = (hex: string, numZones: number = 6): number => {
+  const hsl = hexToHSL(hex);
+  const zoneSize = 360 / numZones;
+  return Math.floor(hsl.h / zoneSize) % numZones;
+};
+
+/**
+ * Find the least used hue zones from recent colors
+ */
+export const findLeastUsedZones = (
+  recentColors: string[],
+  numZones: number = 6
+): number[] => {
+  const zoneCounts = new Array(numZones).fill(0);
+
+  recentColors.forEach((color) => {
+    const zone = getHueZone(color, numZones);
+    zoneCounts[zone]++;
+  });
+
+  const minCount = Math.min(...zoneCounts);
+  return zoneCounts
+    .map((count, index) => (count === minCount ? index : -1))
+    .filter((index) => index !== -1);
+};
+
+/**
+ * Generate a vibrant color avoiding recently used hue zones
+ */
+export const generateVibrantColorAvoidingRecent = (
+  recentColors: string[],
+  numZones: number = 6
+): string => {
+  const leastUsedZones = findLeastUsedZones(recentColors, numZones);
+  const zone = leastUsedZones[Math.floor(Math.random() * leastUsedZones.length)];
+  return generateColorFromZone(zone, numZones);
+};
+
+/**
+ * Generate distractors for complementary challenges
+ * Creates colors near but not exactly at 180 degrees
+ */
+export const generateComplementaryDistractors = (
+  baseHex: string,
+  count: number = 3
+): string[] => {
+  const hsl = hexToHSL(baseHex);
+  const complementH = (hsl.h + 180) % 360;
+
+  // Offsets from the true complement that look plausible
+  const offsets = [25, -25, 40, -40, 15, -15].slice(0, count * 2);
+  const shuffled = offsets.sort(() => Math.random() - 0.5).slice(0, count);
+
+  return shuffled.map((offset) => {
+    const h = (complementH + offset + 360) % 360;
+    const sVariation = (Math.random() - 0.5) * 10;
+    const lVariation = (Math.random() - 0.5) * 10;
+    return hslToHex(
+      h,
+      Math.max(40, Math.min(100, hsl.s + sVariation)),
+      Math.max(30, Math.min(70, hsl.l + lVariation))
+    );
+  });
+};
+
+/**
+ * Generate distractors for split-complementary challenges
+ */
+export const generateSplitCompDistractors = (
+  correctHex: string,
+  otherVisibleHex: string,
+  count: number = 3
+): string[] => {
+  const correctHsl = hexToHSL(correctHex);
+  const otherHsl = hexToHSL(otherVisibleHex);
+
+  const distractors: string[] = [];
+  const usedHues: number[] = [correctHsl.h, otherHsl.h];
+
+  // Generate distractors at various offsets
+  const offsets = [20, -20, 35, -35, 50, -50];
+
+  for (const offset of offsets) {
+    if (distractors.length >= count) break;
+
+    const h = (correctHsl.h + offset + 360) % 360;
+
+    // Check it's not too close to used hues
+    const tooClose = usedHues.some((usedH) => {
+      const diff = Math.min(Math.abs(h - usedH), 360 - Math.abs(h - usedH));
+      return diff < 15;
+    });
+
+    if (!tooClose) {
+      const sVariation = (Math.random() - 0.5) * 15;
+      const lVariation = (Math.random() - 0.5) * 10;
+      distractors.push(
+        hslToHex(
+          h,
+          Math.max(40, Math.min(100, correctHsl.s + sVariation)),
+          Math.max(30, Math.min(70, correctHsl.l + lVariation))
+        )
+      );
+      usedHues.push(h);
+    }
+  }
+
+  return distractors;
+};
+
+/**
+ * Generate distractors for analogous challenges (subtle hue differences)
+ */
+export const generateAnalogousDistractors = (
+  correctHex: string,
+  flowDirection: 'clockwise' | 'counter-clockwise',
+  count: number = 3
+): string[] => {
+  const hsl = hexToHSL(correctHex);
+
+  // For analogous, distractors should be subtle - slightly off in the flow
+  const baseOffset = flowDirection === 'clockwise' ? 1 : -1;
+  const offsets = [15, -10, 25, -20, 8, -5].map((o) => o * baseOffset);
+  const shuffled = offsets.sort(() => Math.random() - 0.5).slice(0, count);
+
+  return shuffled.map((offset) => {
+    const h = (hsl.h + offset + 360) % 360;
+    const sVariation = (Math.random() - 0.5) * 8;
+    const lVariation = (Math.random() - 0.5) * 8;
+    return hslToHex(
+      h,
+      Math.max(50, Math.min(100, hsl.s + sVariation)),
+      Math.max(35, Math.min(65, hsl.l + lVariation))
+    );
+  });
+};
+
+/**
+ * Generate distractors for tetradic challenges
+ */
+export const generateTetradicDistractors = (
+  correctHex: string,
+  visibleHexes: string[],
+  count: number = 3
+): string[] => {
+  const correctHsl = hexToHSL(correctHex);
+  const visibleHues = visibleHexes.map((h) => hexToHSL(h).h);
+
+  const distractors: string[] = [];
+  const usedHues = [correctHsl.h, ...visibleHues];
+
+  // Generate distractors at offsets from the correct answer
+  const offsets = [15, -15, 30, -30, 45, -45];
+
+  for (const offset of offsets) {
+    if (distractors.length >= count) break;
+
+    const h = (correctHsl.h + offset + 360) % 360;
+
+    const tooClose = usedHues.some((usedH) => {
+      const diff = Math.min(Math.abs(h - usedH), 360 - Math.abs(h - usedH));
+      return diff < 12;
+    });
+
+    if (!tooClose) {
+      const sVariation = (Math.random() - 0.5) * 12;
+      const lVariation = (Math.random() - 0.5) * 10;
+      distractors.push(
+        hslToHex(
+          h,
+          Math.max(45, Math.min(95, correctHsl.s + sVariation)),
+          Math.max(35, Math.min(65, correctHsl.l + lVariation))
+        )
+      );
+      usedHues.push(h);
+    }
+  }
+
+  return distractors;
+};
+
+/**
+ * Generate distractors for monochromatic challenges (same hue, different S/L)
+ */
+export const generateMonochromaticDistractors = (
+  correctHex: string,
+  baseHue: number,
+  count: number = 3
+): string[] => {
+  const correctHsl = hexToHSL(correctHex);
+
+  const distractors: string[] = [];
+  const usedSL: Array<{ s: number; l: number }> = [{ s: correctHsl.s, l: correctHsl.l }];
+
+  // Generate variations at different S/L combinations
+  const variations = [
+    { sOffset: 15, lOffset: 10 },
+    { sOffset: -15, lOffset: 10 },
+    { sOffset: 15, lOffset: -10 },
+    { sOffset: -15, lOffset: -10 },
+    { sOffset: 25, lOffset: 15 },
+    { sOffset: -25, lOffset: -15 },
+  ];
+
+  for (const { sOffset, lOffset } of variations) {
+    if (distractors.length >= count) break;
+
+    const newS = Math.max(30, Math.min(100, correctHsl.s + sOffset));
+    const newL = Math.max(25, Math.min(75, correctHsl.l + lOffset));
+
+    // Check it's not too similar to existing
+    const tooSimilar = usedSL.some(
+      ({ s, l }) => Math.abs(s - newS) < 10 && Math.abs(l - newL) < 8
+    );
+
+    if (!tooSimilar) {
+      distractors.push(hslToHex(baseHue, newS, newL));
+      usedSL.push({ s: newS, l: newL });
+    }
+  }
+
+  return distractors;
+};
+
+/**
+ * Shuffle an array (Fisher-Yates)
+ */
+export const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};

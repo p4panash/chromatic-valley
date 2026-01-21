@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   HIGH_SCORES: '@chromatic_valley:high_scores',
   HAS_SEEN_TUTORIAL: '@chromatic_valley:has_seen_tutorial',
   MECHANICS_SEEN: '@chromatic_valley:mechanics_seen',
+  LIFETIME_SCORE: '@chromatic_valley:lifetime_score',
 } as const;
 
 export interface HighScore {
@@ -21,12 +22,14 @@ export interface StoredData {
   highScores: HighScore[];
   hasSeenTutorial: boolean;
   mechanicsSeen: TutorialMechanic[];
+  lifetimeScore: number;
 }
 
 const DEFAULT_DATA: StoredData = {
   highScores: [],
   hasSeenTutorial: false,
   mechanicsSeen: [],
+  lifetimeScore: 0,
 };
 
 export const useStorage = () => {
@@ -37,16 +40,18 @@ export const useStorage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [scoresJson, tutorialSeen, mechanicsJson] = await Promise.all([
+        const [scoresJson, tutorialSeen, mechanicsJson, lifetimeScoreStr] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.HIGH_SCORES),
           AsyncStorage.getItem(STORAGE_KEYS.HAS_SEEN_TUTORIAL),
           AsyncStorage.getItem(STORAGE_KEYS.MECHANICS_SEEN),
+          AsyncStorage.getItem(STORAGE_KEYS.LIFETIME_SCORE),
         ]);
 
         setData({
           highScores: scoresJson ? JSON.parse(scoresJson) : [],
           hasSeenTutorial: tutorialSeen === 'true',
           mechanicsSeen: mechanicsJson ? JSON.parse(mechanicsJson) : [],
+          lifetimeScore: lifetimeScoreStr ? parseInt(lifetimeScoreStr, 10) : 0,
         });
       } catch (error) {
         console.warn('Failed to load storage data:', error);
@@ -119,6 +124,22 @@ export const useStorage = () => {
     return score > currentHigh;
   }, [getHighScore]);
 
+  // Add to lifetime score (only called for Play mode, not Zen)
+  const addToLifetimeScore = useCallback(async (points: number): Promise<number> => {
+    try {
+      const newLifetimeScore = data.lifetimeScore + points;
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.LIFETIME_SCORE,
+        newLifetimeScore.toString()
+      );
+      setData((prev) => ({ ...prev, lifetimeScore: newLifetimeScore }));
+      return newLifetimeScore;
+    } catch (error) {
+      console.warn('Failed to update lifetime score:', error);
+      return data.lifetimeScore;
+    }
+  }, [data.lifetimeScore]);
+
   const clearAllData = useCallback(async () => {
     try {
       await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
@@ -149,6 +170,7 @@ export const useStorage = () => {
     highScores: data.highScores,
     hasSeenTutorial: data.hasSeenTutorial,
     mechanicsSeen: data.mechanicsSeen,
+    lifetimeScore: data.lifetimeScore,
     isLoading,
     saveHighScore,
     markTutorialSeen,
@@ -156,6 +178,7 @@ export const useStorage = () => {
     markMechanicSeen,
     getHighScore,
     isNewHighScore,
+    addToLifetimeScore,
     clearAllData,
     resetTutorials,
   };

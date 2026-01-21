@@ -14,7 +14,7 @@ interface ButtonProps {
   title: string;
   onPress: () => void;
   style?: ViewStyle;
-  variant?: 'primary' | 'secondary' | 'tertiary';
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'zen';
 }
 
 export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant = 'primary' }) => {
@@ -35,14 +35,15 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant =
     translateY.value = withSpring(0, { damping: 10, stiffness: 150 });
   };
 
-  const isSecondary = variant === 'secondary';
+  const isZen = variant === 'zen';
   const isTertiary = variant === 'tertiary';
+  const isSecondary = variant === 'secondary';
 
   return (
     <AnimatedPressable
       style={[
         styles.container,
-        isSecondary && styles.containerSecondary,
+        (isSecondary || isZen) && styles.containerSecondary,
         isTertiary && styles.containerTertiary,
         animatedStyle,
         style,
@@ -55,6 +56,15 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant =
         <Animated.View style={styles.tertiaryInner}>
           <Text style={styles.textTertiary}>{title}</Text>
         </Animated.View>
+      ) : isZen ? (
+        <LinearGradient
+          colors={['#B5A0C8', '#9576B0']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.zenGradient}
+        >
+          <Text style={styles.textZen}>{title}</Text>
+        </LinearGradient>
       ) : isSecondary ? (
         <Animated.View style={styles.secondaryInner}>
           <Text style={styles.textSecondary}>{title}</Text>
@@ -73,6 +83,8 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, style, variant =
   );
 };
 
+const BUTTON_WIDTH = 200;
+
 const styles = StyleSheet.create({
   container: {
     borderRadius: 50,
@@ -83,13 +95,20 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   containerSecondary: {
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 4,
   },
   gradient: {
-    paddingVertical: 20,
-    paddingHorizontal: 60,
+    width: BUTTON_WIDTH,
+    paddingVertical: 18,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zenGradient: {
+    width: BUTTON_WIDTH,
+    paddingVertical: 14,
     borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
@@ -109,6 +128,13 @@ const styles = StyleSheet.create({
     fontWeight: FONTS.medium,
     color: COLORS.white,
     letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  textZen: {
+    fontSize: 13,
+    fontWeight: FONTS.medium,
+    color: COLORS.white,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   textSecondary: {

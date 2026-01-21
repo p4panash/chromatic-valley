@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,30 +7,29 @@ import {
   Feedback,
   BackgroundShapes,
   ColorMatchChallenge,
-  ColorWheelChallenge,
-  MiniCastle,
+  HarmonyChallenge,
   BackButton,
 } from '../components';
 import { useHaptics } from '../hooks';
-import { COLORS, GAME_CONFIG } from '../constants/theme';
-import type { GameState, UnifiedRoundState, FeedbackType, CastleProgress } from '../types';
+import { COLORS, GAME_CONFIG, HARMONY_CONFIG, getEvolvingBackground, getUnlockedHarmonyColors } from '../constants/theme';
+import type { GameState, UnifiedRoundState, FeedbackType } from '../types';
 
 interface GameScreenProps {
   gameState: GameState;
   roundState: UnifiedRoundState | null;
   feedback: FeedbackType;
-  castleProgress: CastleProgress;
   onChoice: (value: string | number) => void;
   onExit?: () => void;
+  lifetimeScore?: number;
 }
 
 export const GameScreen: React.FC<GameScreenProps> = ({
   gameState,
   roundState,
   feedback,
-  castleProgress,
   onChoice,
   onExit,
+  lifetimeScore = 0,
 }) => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -39,7 +38,15 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   const isCompact = width < 400;
   const backButtonSize = isCompact ? 36 : 40;
-  const castleSize = isCompact ? 60 : 70;
+
+  // Calculate evolving background and unlocked colors
+  const { backgroundColors, unlockedColors } = useMemo(() => {
+    const unlockedCount = HARMONY_CONFIG.filter((h) => h.unlockThreshold <= lifetimeScore).length;
+    return {
+      backgroundColors: getEvolvingBackground(unlockedCount),
+      unlockedColors: getUnlockedHarmonyColors(lifetimeScore),
+    };
+  }, [lifetimeScore]);
 
   // Reveal correct answer timing on wrong/timeout
   useEffect(() => {
@@ -91,7 +98,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   if (!roundState) {
     return (
       <LinearGradient
-        colors={[COLORS.background.start, COLORS.background.end]}
+        colors={[backgroundColors.start, backgroundColors.end]}
         style={styles.container}
       />
     );
@@ -102,10 +109,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   return (
     <LinearGradient
-      colors={[COLORS.background.start, COLORS.background.end]}
+      colors={[backgroundColors.start, backgroundColors.end]}
       style={styles.container}
     >
-      <BackgroundShapes />
+      <BackgroundShapes unlockedColors={unlockedColors} />
 
       <View
         style={[
@@ -130,15 +137,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           />
         </View>
 
-        {/* Castle positioned absolutely, below header aligned with score */}
-        <View style={[styles.castleAbsolute, { top: insets.top + (isCompact ? 52 : 58) }]}>
-          <MiniCastle
-            progress={castleProgress}
-            answerColors={gameState.answerColors}
-            size={castleSize}
-          />
-        </View>
-
         {/* Challenge area */}
         <View style={styles.gameArea}>
           {roundState.challengeType === 'color-match' ? (
@@ -151,7 +149,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               showCorrectAnswer={showCorrectAnswer}
             />
           ) : (
-            <ColorWheelChallenge
+            <HarmonyChallenge
               round={roundState}
               feedback={feedback}
               processingChoice={gameState.processingChoice}
@@ -163,7 +161,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         </View>
       </View>
 
-      <Feedback type={feedback} />
+      <Feedback type={feedback} unlockedColors={unlockedColors} />
     </LinearGradient>
   );
 };
@@ -180,10 +178,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  castleAbsolute: {
-    position: 'absolute',
-    right: 20,
   },
   gameArea: {
     flex: 1,

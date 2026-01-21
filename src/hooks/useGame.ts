@@ -1,12 +1,25 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { COLOR_PALETTE, GAME_CONFIG } from '../constants/theme';
+import { COLOR_PALETTE, GAME_CONFIG, HARMONY_CONFIG } from '../constants/theme';
 import {
   generateSimilarColor,
   colorDistance,
   generateRandomVibrantColor,
+  generateVibrantColorAvoidingRecent,
   getTriadicColors,
+  getComplementaryColor,
+  getSplitComplementary,
+  getAnalogousColors,
+  getTetradicColors,
+  getDoubleComplementaryColors,
+  getMonochromaticColors,
   hexToHSL,
   hslToHex,
+  generateComplementaryDistractors,
+  generateSplitCompDistractors,
+  generateAnalogousDistractors,
+  generateTetradicDistractors,
+  generateMonochromaticDistractors,
+  shuffleArray,
 } from '../utils/colorUtils';
 import type {
   GameState,
@@ -14,8 +27,14 @@ import type {
   GameMode,
   UnifiedRoundState,
   ColorMatchRound,
-  ColorWheelRound,
-  ChallengeType,
+  TriadicRound,
+  ComplementaryRound,
+  SplitComplementaryRound,
+  AnalogousRound,
+  TetradicRound,
+  DoubleComplementaryRound,
+  MonochromaticRound,
+  HarmonyType,
   CastleProgress,
   CastleStage,
 } from '../types';
@@ -44,17 +63,24 @@ export const STREAK_MILESTONES = [3, 5, 10, 15, 20, 25];
 
 interface UseGameOptions {
   tutorialActive?: boolean;
+  lifetimeScore?: number;
 }
 
 export const useGame = (options: UseGameOptions = {}) => {
-  const { tutorialActive = false } = options;
+  const { tutorialActive = false, lifetimeScore = 0 } = options;
 
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [roundState, setRoundState] = useState<UnifiedRoundState | null>(null);
   const [feedback, setFeedback] = useState<FeedbackType>(null);
-  const [currentChallengeType, setCurrentChallengeType] = useState<ChallengeType>('color-match');
+  const [currentChallengeType, setCurrentChallengeType] = useState<HarmonyType>('color-match');
   const [streakMilestone, setStreakMilestone] = useState<number | null>(null);
   const [timerPendingStart, setTimerPendingStart] = useState(false);
+
+  // Keep lifetime score in a ref for use in callbacks
+  const lifetimeScoreRef = useRef(lifetimeScore);
+  useEffect(() => {
+    lifetimeScoreRef.current = lifetimeScore;
+  }, [lifetimeScore]);
 
   const tutorialActiveRef = useRef(tutorialActive);
 
@@ -200,9 +226,12 @@ export const useGame = (options: UseGameOptions = {}) => {
     };
   }, [getDifficulty, generateChoices]);
 
-  // Generate a color wheel round
-  const generateColorWheelRound = useCallback((): ColorWheelRound => {
-    const baseColor = generateRandomVibrantColor();
+  // Generate a triadic round (120 degrees apart)
+  const generateTriadicRound = useCallback((): TriadicRound => {
+    const recentColors = gameStateRef.current.answerColors;
+    const baseColor = recentColors.length > 0
+      ? generateVibrantColorAvoidingRecent(recentColors, GAME_CONFIG.hueZones)
+      : generateRandomVibrantColor();
     const [triad1, triad2] = getTriadicColors(baseColor);
     const missingIndex = Math.floor(Math.random() * 3);
     const wheelColors: [string, string, string] = [baseColor, triad1, triad2];
@@ -211,7 +240,7 @@ export const useGame = (options: UseGameOptions = {}) => {
     // Generate 3 wrong choices - colors at different hue offsets
     const hsl = hexToHSL(correctColor);
     const wrongChoices: string[] = [];
-    const offsets = [45, -45, 90]; // 3 wrong choices at different hue angles
+    const offsets = [45, -45, 90];
     for (const offset of offsets) {
       const wrongH = (hsl.h + offset + 360) % 360;
       wrongChoices.push(hslToHex(wrongH, hsl.s, hsl.l));
@@ -223,7 +252,7 @@ export const useGame = (options: UseGameOptions = {}) => {
     choices.splice(correctChoiceIndex, 0, correctColor);
 
     return {
-      challengeType: 'color-wheel',
+      challengeType: 'triadic',
       wheelColors,
       missingIndex,
       correctColor,
@@ -233,15 +262,253 @@ export const useGame = (options: UseGameOptions = {}) => {
     };
   }, []);
 
+  // Generate a complementary round (180 degrees apart)
+  const generateComplementaryRound = useCallback((): ComplementaryRound => {
+    const recentColors = gameStateRef.current.answerColors;
+    const baseColor = recentColors.length > 0
+      ? generateVibrantColorAvoidingRecent(recentColors, GAME_CONFIG.hueZones)
+      : generateRandomVibrantColor();
+    const correctColor = getComplementaryColor(baseColor);
+
+    // Generate 3 wrong choices near but not exactly at 180 degrees
+    const wrongChoices = generateComplementaryDistractors(baseColor, 3);
+
+    // Insert correct answer at random position
+    const correctChoiceIndex = Math.floor(Math.random() * 4);
+    const choices = [...wrongChoices];
+    choices.splice(correctChoiceIndex, 0, correctColor);
+
+    return {
+      challengeType: 'complementary',
+      baseColor,
+      correctColor,
+      choices,
+      correctChoiceIndex,
+      timeLeft: 100,
+    };
+  }, []);
+
+  // Generate a split-complementary round
+  const generateSplitComplementaryRound = useCallback((): SplitComplementaryRound => {
+    const recentColors = gameStateRef.current.answerColors;
+    const baseColor = recentColors.length > 0
+      ? generateVibrantColorAvoidingRecent(recentColors, GAME_CONFIG.hueZones)
+      : generateRandomVibrantColor();
+    const [split1, split2] = getSplitComplementary(baseColor);
+
+    // Randomly choose which split color to hide
+    const missingPosition: 'split1' | 'split2' = Math.random() < 0.5 ? 'split1' : 'split2';
+    const correctColor = missingPosition === 'split1' ? split1 : split2;
+    const visibleSplitColor = missingPosition === 'split1' ? split2 : split1;
+
+    // Generate distractors
+    const wrongChoices = generateSplitCompDistractors(correctColor, visibleSplitColor, 3);
+
+    // Insert correct answer at random position
+    const correctChoiceIndex = Math.floor(Math.random() * 4);
+    const choices = [...wrongChoices];
+    choices.splice(correctChoiceIndex, 0, correctColor);
+
+    return {
+      challengeType: 'split-complementary',
+      baseColor,
+      visibleSplitColor,
+      missingPosition,
+      correctColor,
+      choices,
+      correctChoiceIndex,
+      timeLeft: 100,
+    };
+  }, []);
+
+  // Generate an analogous round (30 degrees apart)
+  const generateAnalogousRound = useCallback((): AnalogousRound => {
+    const recentColors = gameStateRef.current.answerColors;
+    const centerColor = recentColors.length > 0
+      ? generateVibrantColorAvoidingRecent(recentColors, GAME_CONFIG.hueZones)
+      : generateRandomVibrantColor();
+    const [analog1, analog2] = getAnalogousColors(centerColor, 30);
+
+    // Show two colors, ask for the third
+    // Randomly decide direction and which is missing
+    const flowDirection: 'clockwise' | 'counter-clockwise' = Math.random() < 0.5 ? 'clockwise' : 'counter-clockwise';
+
+    // In clockwise: analog2 -> center -> analog1
+    // In counter-clockwise: analog1 -> center -> analog2
+    let visibleColors: [string, string];
+    let correctColor: string;
+
+    if (flowDirection === 'clockwise') {
+      // Show analog2 and center, ask for analog1
+      visibleColors = [analog2, centerColor];
+      correctColor = analog1;
+    } else {
+      // Show analog1 and center, ask for analog2
+      visibleColors = [analog1, centerColor];
+      correctColor = analog2;
+    }
+
+    // Generate subtle distractors
+    const wrongChoices = generateAnalogousDistractors(correctColor, flowDirection, 3);
+
+    // Insert correct answer at random position
+    const correctChoiceIndex = Math.floor(Math.random() * 4);
+    const choices = [...wrongChoices];
+    choices.splice(correctChoiceIndex, 0, correctColor);
+
+    return {
+      challengeType: 'analogous',
+      visibleColors,
+      flowDirection,
+      correctColor,
+      choices,
+      correctChoiceIndex,
+      timeLeft: 100,
+    };
+  }, []);
+
+  // Generate a tetradic/square round (90 degrees apart)
+  const generateTetradicRound = useCallback((): TetradicRound => {
+    const recentColors = gameStateRef.current.answerColors;
+    const baseColor = recentColors.length > 0
+      ? generateVibrantColorAvoidingRecent(recentColors, GAME_CONFIG.hueZones)
+      : generateRandomVibrantColor();
+    const [tetra1, tetra2, tetra3] = getTetradicColors(baseColor);
+    const wheelColors: [string, string, string, string] = [baseColor, tetra1, tetra2, tetra3];
+
+    // Randomly choose which to hide
+    const missingIndex = Math.floor(Math.random() * 4) as 0 | 1 | 2 | 3;
+    const correctColor = wheelColors[missingIndex];
+    const visibleColors = wheelColors.filter((_, i) => i !== missingIndex);
+
+    // Generate distractors
+    const wrongChoices = generateTetradicDistractors(correctColor, visibleColors, 3);
+
+    // Insert correct answer at random position
+    const correctChoiceIndex = Math.floor(Math.random() * 4);
+    const choices = [...wrongChoices];
+    choices.splice(correctChoiceIndex, 0, correctColor);
+
+    return {
+      challengeType: 'tetradic',
+      wheelColors,
+      missingIndex,
+      correctColor,
+      choices,
+      correctChoiceIndex,
+      timeLeft: 100,
+    };
+  }, []);
+
+  // Generate a double-complementary round
+  const generateDoubleComplementaryRound = useCallback((): DoubleComplementaryRound => {
+    const recentColors = gameStateRef.current.answerColors;
+    const baseColor = recentColors.length > 0
+      ? generateVibrantColorAvoidingRecent(recentColors, GAME_CONFIG.hueZones)
+      : generateRandomVibrantColor();
+    const [adjacent, complement1, complement2] = getDoubleComplementaryColors(baseColor);
+
+    // All 4 colors: base, adjacent, complement1, complement2
+    const allColors = [baseColor, adjacent, complement1, complement2];
+
+    // Randomly choose which to hide
+    const missingPosition = Math.floor(Math.random() * 4) as 0 | 1 | 2 | 3;
+    const correctColor = allColors[missingPosition];
+    const visibleColors = allColors.filter((_, i) => i !== missingPosition) as [string, string, string];
+
+    // Generate distractors
+    const wrongChoices = generateTetradicDistractors(correctColor, visibleColors, 3);
+
+    // Insert correct answer at random position
+    const correctChoiceIndex = Math.floor(Math.random() * 4);
+    const choices = [...wrongChoices];
+    choices.splice(correctChoiceIndex, 0, correctColor);
+
+    return {
+      challengeType: 'double-complementary',
+      visibleColors,
+      missingPosition,
+      correctColor,
+      choices,
+      correctChoiceIndex,
+      timeLeft: 100,
+    };
+  }, []);
+
+  // Generate a monochromatic round (same hue, different S/L)
+  const generateMonochromaticRound = useCallback((): MonochromaticRound => {
+    const recentColors = gameStateRef.current.answerColors;
+    const baseColor = recentColors.length > 0
+      ? generateVibrantColorAvoidingRecent(recentColors, GAME_CONFIG.hueZones)
+      : generateRandomVibrantColor();
+    const baseHsl = hexToHSL(baseColor);
+    const baseHue = baseHsl.h;
+
+    const [lighter, darker] = getMonochromaticColors(baseColor);
+
+    // All 3 shades: lighter, base, darker
+    const allShades = [lighter, baseColor, darker];
+
+    // Randomly choose which to hide
+    const missingIndex = Math.floor(Math.random() * 3);
+    const correctColor = allShades[missingIndex];
+    const visibleShades = allShades.filter((_, i) => i !== missingIndex) as [string, string];
+
+    // Generate distractors - same hue, different S/L
+    const wrongChoices = generateMonochromaticDistractors(correctColor, baseHue, 3);
+
+    // Insert correct answer at random position
+    const correctChoiceIndex = Math.floor(Math.random() * 4);
+    const choices = [...wrongChoices];
+    choices.splice(correctChoiceIndex, 0, correctColor);
+
+    return {
+      challengeType: 'monochromatic',
+      baseHue,
+      visibleShades,
+      correctColor,
+      choices,
+      correctChoiceIndex,
+      timeLeft: 100,
+    };
+  }, []);
+
+  // Get unlocked harmonies based on lifetime score
+  const getUnlockedHarmonies = useCallback((score: number) => {
+    return HARMONY_CONFIG.filter((h) => h.unlockThreshold <= score);
+  }, []);
+
+  // Select next harmony type using weighted random selection
+  const selectNextHarmony = useCallback((): HarmonyType => {
+    const currentLifetimeScore = lifetimeScoreRef.current;
+    const unlockedHarmonies = getUnlockedHarmonies(currentLifetimeScore);
+
+    // Calculate total weight of unlocked harmonies
+    const totalWeight = unlockedHarmonies.reduce((sum, h) => sum + h.weight, 0);
+
+    // Weighted random selection
+    let random = Math.random() * totalWeight;
+    for (const harmony of unlockedHarmonies) {
+      random -= harmony.weight;
+      if (random <= 0) {
+        return harmony.type;
+      }
+    }
+
+    // Fallback to color-match
+    return 'color-match';
+  }, [getUnlockedHarmonies]);
+
   // Decide which challenge type to use next
-  const getNextChallengeType = useCallback((currentType: ChallengeType, roundsSinceSwitch: number): ChallengeType => {
+  const getNextChallengeType = useCallback((currentType: HarmonyType, roundsSinceSwitch: number): HarmonyType => {
     // Switch challenge type every 3-5 rounds
     const switchThreshold = 3 + Math.floor(Math.random() * 3);
     if (roundsSinceSwitch >= switchThreshold) {
-      return currentType === 'color-match' ? 'color-wheel' : 'color-match';
+      // Select a new harmony type (can be the same, but weighted selection gives variety)
+      return selectNextHarmony();
     }
     return currentType;
-  }, []);
+  }, [selectNextHarmony]);
 
   // Refs for circular dependency avoidance
   const nextRoundRef = useRef<() => void>(() => {});
@@ -286,6 +553,39 @@ export const useGame = (options: UseGameOptions = {}) => {
     timerRef.current = requestAnimationFrame(tick);
   }, [getTimeForLevel]);
 
+  // Generate a round based on the harmony type
+  const generateRoundForHarmony = useCallback((harmonyType: HarmonyType, level: number): UnifiedRoundState => {
+    switch (harmonyType) {
+      case 'color-match':
+        return generateColorMatchRound(level);
+      case 'triadic':
+        return generateTriadicRound();
+      case 'complementary':
+        return generateComplementaryRound();
+      case 'split-complementary':
+        return generateSplitComplementaryRound();
+      case 'analogous':
+        return generateAnalogousRound();
+      case 'tetradic':
+        return generateTetradicRound();
+      case 'double-complementary':
+        return generateDoubleComplementaryRound();
+      case 'monochromatic':
+        return generateMonochromaticRound();
+      default:
+        return generateColorMatchRound(level);
+    }
+  }, [
+    generateColorMatchRound,
+    generateTriadicRound,
+    generateComplementaryRound,
+    generateSplitComplementaryRound,
+    generateAnalogousRound,
+    generateTetradicRound,
+    generateDoubleComplementaryRound,
+    generateMonochromaticRound,
+  ]);
+
   const nextRound = useCallback(() => {
     setGameState((prev) => ({ ...prev, processingChoice: false }));
 
@@ -294,11 +594,11 @@ export const useGame = (options: UseGameOptions = {}) => {
     const isUnifiedMode = currentState.mode === 'unified';
 
     // Determine challenge type for unified and zen modes (both get variety)
-    let challengeType: ChallengeType = 'color-match';
+    let harmonyType: HarmonyType = 'color-match';
     if (isUnifiedMode || isZenMode) {
-      challengeType = getNextChallengeType(currentChallengeType, currentState.roundsSinceSwitch);
-      if (challengeType !== currentChallengeType) {
-        setCurrentChallengeType(challengeType);
+      harmonyType = getNextChallengeType(currentChallengeType, currentState.roundsSinceSwitch);
+      if (harmonyType !== currentChallengeType) {
+        setCurrentChallengeType(harmonyType);
         setGameState((prev) => ({ ...prev, roundsSinceSwitch: 0 }));
       } else {
         setGameState((prev) => ({ ...prev, roundsSinceSwitch: prev.roundsSinceSwitch + 1 }));
@@ -306,13 +606,7 @@ export const useGame = (options: UseGameOptions = {}) => {
     }
 
     // Generate appropriate round
-    let newRound: UnifiedRoundState;
-    if ((isUnifiedMode || isZenMode) && challengeType === 'color-wheel') {
-      newRound = generateColorWheelRound();
-    } else {
-      newRound = generateColorMatchRound(currentState.level);
-    }
-
+    const newRound = generateRoundForHarmony(harmonyType, currentState.level);
     setRoundState(newRound);
 
     // Timer for all challenge types in non-zen modes
@@ -324,7 +618,7 @@ export const useGame = (options: UseGameOptions = {}) => {
         startTimerInternal(currentState.level);
       }
     }
-  }, [currentChallengeType, generateColorMatchRound, generateColorWheelRound, getNextChallengeType, startTimerInternal]);
+  }, [currentChallengeType, generateRoundForHarmony, getNextChallengeType, startTimerInternal]);
 
   // Start timer when tutorial becomes inactive and timer is pending
   useEffect(() => {

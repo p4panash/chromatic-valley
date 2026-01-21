@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { BackgroundShapes, MiniCastle, BackButton, Button } from '../components';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, FONTS, HARMONY_CONFIG, getEvolvingBackground, getUnlockedHarmonyColors } from '../constants/theme';
 import type { GameMode } from '../types';
 
 type SortMode = 'score' | 'date';
@@ -21,6 +21,7 @@ interface HighScore {
 interface ScoreHistoryScreenProps {
   highScores: HighScore[];
   onClose: () => void;
+  lifetimeScore?: number;
 }
 
 const formatDate = (dateString: string): string => {
@@ -51,9 +52,20 @@ const getRankStyle = (rank: number) => {
 export const ScoreHistoryScreen: React.FC<ScoreHistoryScreenProps> = ({
   highScores,
   onClose,
+  lifetimeScore = 0,
 }) => {
   const insets = useSafeAreaInsets();
   const [sortMode, setSortMode] = useState<SortMode>('score');
+
+  // Evolving background and unlocked colors
+  const backgroundColors = useMemo(() => {
+    const unlockedCount = HARMONY_CONFIG.filter((h) => h.unlockThreshold <= lifetimeScore).length;
+    return getEvolvingBackground(unlockedCount);
+  }, [lifetimeScore]);
+
+  const unlockedColors = useMemo(() => {
+    return getUnlockedHarmonyColors(lifetimeScore);
+  }, [lifetimeScore]);
 
   const sortedScores = useMemo(() => {
     if (sortMode === 'date') {
@@ -74,10 +86,10 @@ export const ScoreHistoryScreen: React.FC<ScoreHistoryScreenProps> = ({
       exiting={FadeOut.duration(200)}
     >
       <LinearGradient
-        colors={[COLORS.background.start, COLORS.background.end]}
+        colors={[backgroundColors.start, backgroundColors.end]}
         style={styles.container}
       >
-        <BackgroundShapes />
+        <BackgroundShapes unlockedColors={unlockedColors} />
 
         <View
           style={[

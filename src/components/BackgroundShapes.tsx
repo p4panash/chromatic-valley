@@ -1,4 +1,4 @@
-import React, { useEffect, memo } from 'react';
+import React, { useEffect, memo, useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -13,6 +13,15 @@ import Animated, {
 import { COLORS } from '../constants/theme';
 
 const { width, height } = Dimensions.get('window');
+
+// Default colors when no unlocked colors provided
+const DEFAULT_COLORS = [
+  COLORS.accent.coral,
+  COLORS.accent.sage,
+  COLORS.accent.sky,
+  COLORS.accent.lavender,
+  COLORS.accent.sand,
+];
 
 // Configuration for floating particles
 const FLOATING_PARTICLE_COUNT = 8;
@@ -29,16 +38,8 @@ interface FloatingParticleConfig {
   driftDistance: number;
 }
 
-// Generate random particle configurations
-const generateParticles = (): FloatingParticleConfig[] => {
-  const colors = [
-    COLORS.accent.coral,
-    COLORS.accent.sage,
-    COLORS.accent.sky,
-    COLORS.accent.lavender,
-    COLORS.accent.sand,
-  ];
-
+// Generate random particle configurations with given colors
+const generateParticles = (colors: string[]): FloatingParticleConfig[] => {
   return Array.from({ length: FLOATING_PARTICLE_COUNT }).map((_, i) => ({
     x: Math.random() * width,
     y: Math.random() * height,
@@ -51,7 +52,16 @@ const generateParticles = (): FloatingParticleConfig[] => {
   }));
 };
 
-const PARTICLES = generateParticles();
+// Stable particle positions (positions only, color applied separately)
+const PARTICLE_POSITIONS = Array.from({ length: FLOATING_PARTICLE_COUNT }).map((_, i) => ({
+  x: Math.random() * width,
+  y: Math.random() * height,
+  size: 4 + Math.random() * 8,
+  duration: 4000 + Math.random() * 3000,
+  delay: i * 300,
+  floatDistance: 15 + Math.random() * 20,
+  driftDistance: 8 + Math.random() * 12,
+}));
 
 // Individual floating particle component
 interface FloatingParticleProps {
@@ -228,7 +238,9 @@ AmbientSparkle.displayName = 'AmbientSparkle';
 
 // Large background shape component
 interface BackgroundShapeProps {
-  style: object;
+  baseStyle: object;
+  color: string;
+  opacity: number;
   floatDistance: number;
   duration: number;
   delay: number;
@@ -236,7 +248,9 @@ interface BackgroundShapeProps {
 }
 
 const BackgroundShape: React.FC<BackgroundShapeProps> = memo(({
-  style,
+  baseStyle,
+  color,
+  opacity,
   floatDistance,
   duration,
   delay,
@@ -309,51 +323,76 @@ const BackgroundShape: React.FC<BackgroundShapeProps> = memo(({
     ],
   }));
 
-  return <Animated.View style={[style, animatedStyle]} />;
+  return (
+    <Animated.View
+      style={[
+        baseStyle,
+        { backgroundColor: color, opacity },
+        animatedStyle
+      ]}
+    />
+  );
 });
 
 BackgroundShape.displayName = 'BackgroundShape';
 
-export const BackgroundShapes: React.FC = () => {
+// Shape configurations (position/size only, color applied separately)
+const SHAPE_CONFIGS = [
+  { style: 'shape1', floatDistance: 20, duration: 4000, delay: 0, rotationAmount: 3, defaultOpacity: 0.12 },
+  { style: 'shape2', floatDistance: 15, duration: 5000, delay: 500, rotationAmount: 5, defaultOpacity: 0.12 },
+  { style: 'shape3', floatDistance: 25, duration: 6000, delay: 200, rotationAmount: 0, defaultOpacity: 0.12 },
+  { style: 'shape4', floatDistance: 18, duration: 4500, delay: 800, rotationAmount: 4, defaultOpacity: 0.1 },
+  { style: 'shape5', floatDistance: 12, duration: 5500, delay: 400, rotationAmount: 0, defaultOpacity: 0.1 },
+];
+
+interface BackgroundShapesProps {
+  unlockedColors?: string[];
+}
+
+export const BackgroundShapes: React.FC<BackgroundShapesProps> = ({ unlockedColors }) => {
+  // Use unlocked colors if provided, otherwise use defaults
+  const colors = useMemo(() => {
+    if (unlockedColors && unlockedColors.length > 0) {
+      return unlockedColors;
+    }
+    return DEFAULT_COLORS;
+  }, [unlockedColors]);
+
+  // Generate particle configs with current colors
+  const particles = useMemo(() => {
+    return PARTICLE_POSITIONS.map((pos, i) => ({
+      ...pos,
+      color: colors[i % colors.length],
+    }));
+  }, [colors]);
+
+  // Shape base styles (without color/opacity)
+  const shapeStyles: Record<string, object> = {
+    shape1: styles.shape1Base,
+    shape2: styles.shape2Base,
+    shape3: styles.shape3Base,
+    shape4: styles.shape4Base,
+    shape5: styles.shape5Base,
+  };
+
   return (
     <View style={styles.container} pointerEvents="none">
-      {/* Large background shapes */}
-      <BackgroundShape
-        style={styles.shape1}
-        floatDistance={20}
-        duration={4000}
-        delay={0}
-        rotationAmount={3}
-      />
-      <BackgroundShape
-        style={styles.shape2}
-        floatDistance={15}
-        duration={5000}
-        delay={500}
-        rotationAmount={5}
-      />
-      <BackgroundShape
-        style={styles.shape3}
-        floatDistance={25}
-        duration={6000}
-        delay={200}
-      />
-      <BackgroundShape
-        style={styles.shape4}
-        floatDistance={18}
-        duration={4500}
-        delay={800}
-        rotationAmount={4}
-      />
-      <BackgroundShape
-        style={styles.shape5}
-        floatDistance={12}
-        duration={5500}
-        delay={400}
-      />
+      {/* Large background shapes with dynamic colors */}
+      {SHAPE_CONFIGS.map((config, index) => (
+        <BackgroundShape
+          key={`shape-${index}`}
+          baseStyle={shapeStyles[config.style]}
+          color={colors[index % colors.length]}
+          opacity={config.defaultOpacity}
+          floatDistance={config.floatDistance}
+          duration={config.duration}
+          delay={config.delay}
+          rotationAmount={config.rotationAmount}
+        />
+      ))}
 
-      {/* Floating particles */}
-      {PARTICLES.map((config, index) => (
+      {/* Floating particles with dynamic colors */}
+      {particles.map((config, index) => (
         <FloatingParticle key={`particle-${index}`} config={config} />
       ))}
 
@@ -370,56 +409,46 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
   },
-  // Large background shapes
-  shape1: {
+  // Base styles for shapes (position/size only, no color/opacity)
+  shape1Base: {
     position: 'absolute',
     width: 200,
     height: 200,
     top: -50,
     right: -50,
     borderRadius: 100,
-    backgroundColor: COLORS.accent.coral,
-    opacity: 0.12,
   },
-  shape2: {
+  shape2Base: {
     position: 'absolute',
     width: 150,
     height: 150,
     bottom: '20%',
     left: -40,
-    backgroundColor: COLORS.accent.sage,
-    opacity: 0.12,
     borderRadius: 8,
   },
-  shape3: {
+  shape3Base: {
     position: 'absolute',
     width: 100,
     height: 100,
     top: '40%',
     right: -20,
     borderRadius: 50,
-    backgroundColor: COLORS.accent.lavender,
-    opacity: 0.12,
   },
-  shape4: {
+  shape4Base: {
     position: 'absolute',
     width: 80,
     height: 80,
     top: '15%',
     left: '10%',
     borderRadius: 40,
-    backgroundColor: COLORS.accent.sky,
-    opacity: 0.1,
   },
-  shape5: {
+  shape5Base: {
     position: 'absolute',
     width: 120,
     height: 120,
     bottom: '10%',
     right: '5%',
     borderRadius: 8,
-    backgroundColor: COLORS.accent.sand,
-    opacity: 0.1,
     transform: [{ rotate: '15deg' }],
   },
   // Floating particles

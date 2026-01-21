@@ -1,21 +1,36 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Monument, Button, BackgroundShapes, SoundIcon } from '../components';
+import { Button, BackgroundShapes, SoundIcon, HarmonyPalette } from '../components';
 import { useSoundContext } from '../contexts';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, FONTS, HARMONY_CONFIG, getEvolvingBackground, getUnlockedHarmonyColors } from '../constants/theme';
 
 interface StartScreenProps {
   onStart: () => void;
   onStartZen: () => void;
   onHistory?: () => void;
+  lifetimeScore?: number;
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory }) => {
+export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, onHistory, lifetimeScore = 0 }) => {
   const insets = useSafeAreaInsets();
   const { isMuted, toggleMute, startBgm } = useSoundContext();
   const hasInteractedRef = useRef(false);
+
+  // Calculate unlocked harmonies for evolving background
+  const unlockedCount = useMemo(() => {
+    return HARMONY_CONFIG.filter((h) => h.unlockThreshold <= lifetimeScore).length;
+  }, [lifetimeScore]);
+
+  const backgroundColors = useMemo(() => {
+    return getEvolvingBackground(unlockedCount);
+  }, [unlockedCount]);
+
+  // Get unlocked harmony colors for background shapes
+  const unlockedColors = useMemo(() => {
+    return getUnlockedHarmonyColors(lifetimeScore);
+  }, [lifetimeScore]);
 
   const handleSoundToggle = useCallback(() => {
     // First interaction: start BGM (user interaction required for mobile audio)
@@ -28,10 +43,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
 
   return (
     <LinearGradient
-      colors={[COLORS.background.start, COLORS.background.end]}
+      colors={[backgroundColors.start, backgroundColors.end]}
       style={styles.container}
     >
-      <BackgroundShapes />
+      <BackgroundShapes unlockedColors={unlockedColors} />
 
       {/* Sound toggle button */}
       <TouchableOpacity
@@ -44,13 +59,16 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onStartZen, o
         </View>
       </TouchableOpacity>
 
-      <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
-        <Monument />
+      <View style={[styles.content, { paddingTop: insets.top + 60 }]}>
         <Text style={styles.title}>Chromatic Valley</Text>
         <Text style={styles.subtitle}>A journey through colors</Text>
+
+        {/* Harmony palette - visual representation of unlocked harmonies */}
+        <HarmonyPalette lifetimeScore={lifetimeScore} />
+
         <View style={styles.buttonContainer}>
           <Button title="Play" onPress={onStart} />
-          <Button title="Zen Mode" onPress={onStartZen} variant="secondary" />
+          <Button title="Zen Mode" onPress={onStartZen} variant="zen" />
           {onHistory && (
             <Button title="History" onPress={onHistory} variant="tertiary" />
           )}
@@ -104,7 +122,7 @@ const styles = StyleSheet.create({
     fontWeight: FONTS.regular,
     color: COLORS.text.secondary,
     letterSpacing: 2,
-    marginBottom: 60,
+    marginBottom: 10,
   },
   buttonContainer: {
     marginTop: 20,
