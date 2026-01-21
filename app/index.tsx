@@ -117,12 +117,15 @@ function GameApp() {
     gameState.isPlaying,
     gameState.mode,
     currentScreen,
-    storage,
+    storage.isLoading,
+    storage.mechanicsSeen, // Explicitly track mechanicsSeen changes
+    storage.hasSeenMechanic,
     activeTutorial,
     showHarmonyBanner,
     showHarmonyIntro,
     harmonyToIntroduce,
     roundState,
+    roundState?.challengeType, // Explicitly track challenge type changes
   ]);
 
   // Show intro after banner has been visible for a moment (for newly unlocked harmonies)
